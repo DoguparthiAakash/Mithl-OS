@@ -30,6 +30,11 @@
 - LD (GNU Linker)
 - GRUB tools (for ISO creation)
 
+### For Development And Usage
+Files Access: url:https://drive.google.com/drive/folders/1o5yuezvedfr3F1nlErPffO1PP5ai2NOq?usp=drive_link
+
+Direct Zip  : url:https://drive.google.com/file/d/1ajlRBfFtDubOjY79e0DU1LOFPrhC0XJk/view?usp=drive_link
+
 ### Build Commands
 ```bash
 # Build the kernel
@@ -40,3 +45,4 @@ make iso
 
 # Clean build files
 make clean
+
