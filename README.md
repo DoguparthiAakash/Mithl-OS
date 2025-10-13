@@ -46,8 +46,7 @@ Ensure the following tools are installed:
 - **GCC (32-bit)**  
 - **LD** – GNU Linker  
 - **GRUB Tools** – for ISO image creation
-📂 Development Access
-📁 Google Drive (All Files): Open Folder
+📂 Development Access:
 
 📦 Direct ZIP File: 🔗 **[Download Here (Development Build)](https://drive.google.com/file/d/1ajlRBfFtDubOjY79e0DU1LOFPrhC0XJk/view?usp=drive_link)**
 
