@@ -49,7 +49,7 @@ Ensure the following tools are installed:
 📂 Development Access
 📁 Google Drive (All Files): Open Folder
 
-📦 Direct ZIP File: Download Here
+📦 Direct ZIP File: 🔗 **[Download Here (Development Build)](https://drive.google.com/file/d/1ajlRBfFtDubOjY79e0DU1LOFPrhC0XJk/view?usp=drive_link)**
 
 🧩 Tech Stack
 Language: Assembly, C
