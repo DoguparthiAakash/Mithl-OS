@@ -1,48 +1,78 @@
-# Mithl OS - From-Scratch OS with a Modern GUI
+<p align="center">
+  <img src="OSLogo.png" alt="Mithl OS Logo" width="120"/>
+</p>
 
-**Mithl OS** is a completely custom-built operating system kernel that features a modern graphical user interface, designed from scratch without relying on existing OS architectures. While the interface design is clean and modern, the entire system — from the kernel to the GUI — has been developed independently from the ground up.
+<h1 align="center">💻 Mithl OS</h1>
 
-## Features
+<p align="center"><em>A fully from-scratch operating system featuring a custom-built kernel and a modern graphical interface.</em></p>
 
-### Modern GUI System
-- **Custom-Built Interface**: Entire GUI system built from scratch with a clean, modern look
-- **Window Management**: Draggable, resizable windows with title bars and control buttons
-- **Interactive Elements**: Buttons, labels, and panels with hover and click interactions
-- **Color Scheme**: Professional color palette for a polished user experience
+---
 
-### Graphics System
-- **High-Resolution Support**: 1024x768x32 graphics mode
-- **Drawing Primitives**: Lines, rectangles, circles, and text rendering
-- **Color Management**: ARGB color support with blending and effects
-- **Framebuffer Graphics**: Direct pixel manipulation for smooth rendering
+### 🧠 About the Project
+**Mithl OS** is an entirely custom-built operating system — designed from the ground up, without depending on any existing OS architecture.  
+From the **kernel** to the **GUI system**, every component has been written manually to ensure total control, performance, and design freedom.
 
-### Kernel Features
-- **Multiboot Compatible**: Boots via GRUB bootloader
-- **Graphics Mode**: Switches from VGA text mode to graphical mode
-- **Event Handling**: Mouse and keyboard input processing
-- **Memory Management**: Simple memory allocation for GUI elements
+> “An entirely built-from-scratch OS — to make things right.”
 
-## Building
+---
 
-### Prerequisites
-- NASM (Netwide Assembler)
-- GCC with 32-bit support
-- LD (GNU Linker)
-- GRUB tools (for ISO creation)
+### ✨ Key Features
 
-### For Development And Usage
-Files Access: url:https://drive.google.com/drive/folders/1o5yuezvedfr3F1nlErPffO1PP5ai2NOq?usp=drive_link
+#### 🪟 Modern GUI System
+- 🧩 **Custom Interface:** Designed from scratch with a clean, modern layout  
+- 🪟 **Window Management:** Draggable and resizable windows with control buttons  
+- 🎨 **Interactive Elements:** Buttons, labels, panels, hover, and click effects  
+- 🖌️ **Professional Color Scheme:** Smooth, elegant visual experience  
 
-Direct Zip  : url:https://drive.google.com/file/d/1ajlRBfFtDubOjY79e0DU1LOFPrhC0XJk/view?usp=drive_link
+#### 🖼️ Graphics Engine
+- 📺 **High-Resolution Mode:** 1024×768×32 graphics  
+- 🧮 **Drawing Primitives:** Lines, rectangles, circles, text rendering  
+- 🌈 **ARGB Color Support:** Transparency, blending, and pixel-level control  
+- ⚙️ **Framebuffer Graphics:** Direct pixel rendering for fast performance  
 
-### Build Commands
+#### ⚙️ Kernel Features
+- 🔩 **Multiboot Compatible:** Boots seamlessly via GRUB  
+- 💾 **Graphics Mode:** Switches from VGA text to graphical mode  
+- 🖱️ **Event Handling:** Mouse and keyboard input system  
+- 🧠 **Memory Management:** Lightweight allocator for GUI components  
+
+---
+
+### 🏗️ Building Mithl OS
+
+#### 🧰 Prerequisites
+Ensure the following tools are installed:
+- **NASM** – Netwide Assembler  
+- **GCC (32-bit)**  
+- **LD** – GNU Linker  
+- **GRUB Tools** – for ISO image creation  
+
+#### ⚡ Build Commands
 ```bash
 # Build the kernel
 make
 
-# Build and create bootable ISO
+# Create bootable ISO
 make iso
 
 # Clean build files
 make clean
 
+📂 Development Access
+📁 Google Drive (All Files): Open Folder
+
+📦 Direct ZIP File: Download Here
+
+🧩 Tech Stack
+Language: Assembly, C
+
+Bootloader: GRUB (Multiboot Specification)
+
+Build Tools: Make, NASM, GCC, LD
+
+Architecture: 32-bit (x86)
+
+📜 License
+© 2025 Aakash Doguparthi — All rights reserved.
+
+<p align="center">Made with ❤️ and low-level magic by <b>Aakash Doguparthi</b></p> ```
