@@ -45,19 +45,7 @@ Ensure the following tools are installed:
 - **NASM** – Netwide Assembler  
 - **GCC (32-bit)**  
 - **LD** – GNU Linker  
-- **GRUB Tools** – for ISO image creation  
-
-#### ⚡ Build Commands
-```bash
-# Build the kernel
-make
-
-# Create bootable ISO
-make iso
-
-# Clean build files
-make clean
-
+- **GRUB Tools** – for ISO image creation
 📂 Development Access
 📁 Google Drive (All Files): Open Folder
 
@@ -76,3 +64,16 @@ Architecture: 32-bit (x86)
 © 2025 Aakash Doguparthi — All rights reserved.
 
 <p align="center">Made with ❤️ and low-level magic by <b>Aakash Doguparthi</b></p> ```
+
+
+#### ⚡ Build Commands
+```bash
+# Build the kernel
+make
+
+# Create bootable ISO
+make iso
+
+# Clean build files
+make clean
+
