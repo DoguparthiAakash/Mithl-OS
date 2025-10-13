@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="OSLogo.png" alt="Mithl OS Logo" width="120"/>
+  <img src="OSLogo.png" alt="Mithl OS Logo" width="520"/>
 </p>
 
 <h1 align="center">💻 Mithl OS</h1>
