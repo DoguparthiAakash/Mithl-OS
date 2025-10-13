@@ -76,4 +76,4 @@ make iso
 make clean
 
 ```
-<p align="center">Made with ❤️ and low-level magic by <b>Aakash Doguparthi</b></p> 
+<p align="center">Made with 🤝 and low-level magic by <b>Aakash Doguparthi</b></p> 
