@@ -63,8 +63,6 @@ Architecture: 32-bit (x86)
 📜 License
 © 2025 Aakash Doguparthi — All rights reserved.
 
-<p align="center">Made with ❤️ and low-level magic by <b>Aakash Doguparthi</b></p> ```
-
 
 #### ⚡ Build Commands
 ```bash
@@ -77,3 +75,5 @@ make iso
 # Clean build files
 make clean
 
+```
+<p align="center">Made with ❤️ and low-level magic by <b>Aakash Doguparthi</b></p> 
