@@ -19,6 +19,7 @@
 #include "filesystem.h"
 #include "desktop.h"
 #include "graphics.h"
+#include "mm/pmm.h"
 
 // Initialize inputs
 static void init_input_devices(void)
@@ -88,27 +89,50 @@ void kmain(uint32_t magic, multiboot_info_t* mbi)
     console_log("[INFO] Constructors Called.\n");
     idt_init(); // Initialize IDT to catch exceptions
     console_log("[INFO] IDT Initialized.\n");
+    // Check Multiboot Magic
+    if (magic != MULTIBOOT_MAGIC) {
+        serial_write("[CRITICAL] Invalid Multiboot Magic!\n");
+        // We can't proceed safely usually, but let's try to hang or print
+        console_write("PANIC: Invalid Multiboot Magic!\n");
+        for(;;) __asm__ volatile("hlt");
+    }
+
+    // Initialize Physical Memory Manager (Phase 1)
+    pmm_init(mbi);
+    console_log("[INFO] PMM Initialized.\n");
+
+    // Initialize Virtual Memory Manager (Phase 2)
+    void vmm_init(multiboot_info_t* mboot_info); // Prototype
+    vmm_init(mbi);
+    console_log("[INFO] VMM Initialized (Paging Enabled).\n");
+
+    // Initialize Heap (Requires VMM/PMM)
     memory_init();
     console_log("[INFO] Memory Initialized.\n");
-    rust_init(); // Initialize Rust subsystem
-    console_log("[INFO] Rust Initialized.\n");
     
-    // Initialize Graphics from Multiboot
-    // Initialize Graphics from Multiboot
-    if(magic == MULTIBOOT_MAGIC && (mbi->flags & MULTIBOOT_FLAG_FB)) {
+    // Initialize zRAM
+    void zram_init(void);
+    zram_init();
+    console_log("[INFO] zRAM Initialized.\n");
+    
+    // Initialize Runtime (Requires Heap)
+    rust_init(); 
+    console_log("[INFO] Rust Initialized.\n");
+
+    // Initialize Graphics
+    if (mbi->flags & MULTIBOOT_FLAG_FB) {
         console_log("[INFO] Multiboot Graphics Available. Initializing VESA...\n");
         graphics_init(mbi->framebuffer_width, mbi->framebuffer_height, 
                       mbi->framebuffer_pitch, mbi->framebuffer_bpp, 
                       (void*)(uint32_t)mbi->framebuffer_addr);
         console_log("[INFO] VESA Graphics Initialized.\n");
-    } else {
-        // Fallback or panic if graphics not available
-        serial_write("[CRITICAL] Graphics not available or Invalid Multiboot Magic!\n");
-        if (magic != MULTIBOOT_MAGIC) serial_write("  -> Invalid Magic\n");
-        if (!(mbi->flags & MULTIBOOT_FLAG_FB)) serial_write("  -> No Framebuffer Flag\n");
         
-        // Use VGA text mode to panic visible if possible
-        console_write("PANIC: Graphics Initialization Failed!\nSystem Halted.");
+        // Initialize GPU acceleration
+        void gpu_init(void);
+        gpu_init();
+    } else {
+        serial_write("[CRITICAL] No Framebuffer Flag!\n");
+        console_write("PANIC: No Framebuffer Flag!\n");
         for(;;) __asm__ volatile("hlt");
     }
 

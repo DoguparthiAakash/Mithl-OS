@@ -97,24 +97,60 @@ static const char *exception_messages[] = {
     "Reserved",
     "Reserved",
     "Reserved",
-    "Reserved",
     "Reserved"
 };
 
 void isr_handler(registers_t *regs)
 {
-    // 1. Draw Red Background for Panic
-    draw_rect_filled((rect_t){0, 0, 1024, 768}, 0xFF880000);
+    // LOG TO SERIAL FIRST (Reliable)
+    serial_write("\n\n=== KERNEL PANIC ===\n");
+    serial_write("Exception: ");
+    if (regs->int_no < 32)
+        serial_write(exception_messages[regs->int_no]);
+    else
+        serial_write("Unknown");
+    serial_write("\n");
+    
+    // Print details (Manual hex conversion for serial since no printf)
+    // TODO: proper hex print helper for serial
+    
+    // Special handling for Page Fault (14)
+    if (regs->int_no == 14) {
+        uint32_t cr2;
+        asm volatile("mov %%cr2, %0" : "=r"(cr2));
+        serial_write("Page Fault at Address (CR2): ");
+        
+        char *hex_chars = "0123456789ABCDEF";
+        char buffer[12];
+        buffer[0] = '0'; buffer[1] = 'x'; buffer[10] = '\n'; buffer[11] = 0;
+        for (int i = 0; i < 8; i++) {
+            buffer[9-i] = hex_chars[cr2 & 0xF];
+            cr2 >>= 4;
+        }
+        serial_write(buffer);
+        
+        // Also print EIP to see where we were
+        serial_write("EIP: ");
+        uint32_t eip = regs->eip;
+        for (int i = 0; i < 8; i++) {
+            buffer[9-i] = hex_chars[eip & 0xF];
+            eip >>= 4;
+        }
+        serial_write(buffer);
+    }
+
+    // 1. Draw Red Background for Panic (Might fail if no graphics/paging)
+    // draw_rect_filled((rect_t){0, 0, 1024, 768}, 0xFF880000);
 
     // 2. Draw Title
-    draw_text("=== KERNEL PANIC ===", 50, 50, COLOR_WHITE, 24);
+    // draw_text("=== KERNEL PANIC ===", 50, 50, COLOR_WHITE, 24);
 
     // 3. Draw Exception Name
-    draw_text("Exception:", 50, 100, COLOR_WHITE, 16);
-    if (regs->int_no < 32)
-        draw_text(exception_messages[regs->int_no], 180, 100, COLOR_WHITE, 16);
-    else
-        draw_text("Unknown Exception", 180, 100, COLOR_WHITE, 16);
+    // draw_text("Exception:", 50, 100, COLOR_WHITE, 16);
+    // if (regs->int_no < 32)
+    //     draw_text(exception_messages[regs->int_no], 180, 100, COLOR_WHITE, 16);
+    // else
+    //     draw_text("Unknown Exception", 180, 100, COLOR_WHITE, 16);
 
     // 4. Draw Details
     draw_text("ISR:", 50, 130, COLOR_WHITE, 16);

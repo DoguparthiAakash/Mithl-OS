@@ -1,5 +1,7 @@
-; boot/boot.asm - Multiboot v1 header + entry that sets a stack and calls kmain
+; boot/boot.asm - Multiboot v1 header + entry
 BITS 32
+
+; Multiboot1 Header (BIOS)
 SECTION .multiboot
 align 4
 MULTIBOOT_PAGE_ALIGN  equ  1<<0

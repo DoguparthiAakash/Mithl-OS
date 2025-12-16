@@ -29,6 +29,7 @@ typedef struct process {
 // Process Manager Functions
 void process_init(void);
 process_t *process_create(const char *name, void (*entry_point)(void));
+process_t *process_create_elf(const char *name, const char *filename);
 void process_schedule(void);
 void process_exit(void);
 

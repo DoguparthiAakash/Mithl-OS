@@ -167,6 +167,13 @@ typedef struct gui_manager
     // Dirty Rectangle Optimization
     int needs_redraw;
     rect_t dirty_rect; // Union of dirty areas
+    
+    // Background Layer Redraw (for proper window move artifacts fix)
+    int needs_background_redraw;
+    rect_t background_dirty_rect;
+    
+    // Mouse Capture
+    gui_element_t *captured_element; 
 } gui_manager_t;
 
 /* Global GUI manager instance */
@@ -186,6 +193,10 @@ void gui_present(void); // Present backbuffer to screen
 gui_element_t *gui_find_element_at(int x, int y);
 void gui_bring_to_front(gui_element_t *element);
 void gui_window_add_tab(gui_window_t *window, const char *title, gui_element_t *content);
+
+// Mouse Capture API
+void gui_capture_mouse(gui_element_t *element);
+void gui_release_mouse(void);
 
 int point_in_rect(point_t p, rect_t r);
 

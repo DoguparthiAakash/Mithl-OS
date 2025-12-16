@@ -1,4 +1,4 @@
-/* linker/linker.ld - Link at 1 MiB and ensure multiboot header is within first 8 KiB */
+/* linker/linker.ld - Link at 1 MiB with Multiboot1 header */
 ENTRY(start)
 
 SECTIONS
@@ -49,4 +49,7 @@ SECTIONS
     *(COMMON)
     *(.bss*)
   }
+
+  /* Define end of kernel symbol */
+  _kernel_end = .;
 }

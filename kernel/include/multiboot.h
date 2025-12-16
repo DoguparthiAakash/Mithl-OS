@@ -18,6 +18,18 @@
 
 #define MULTIBOOT_MAGIC        0x2BADB002
 
+#define MULTIBOOT_MEMORY_AVAILABLE 1
+#define MULTIBOOT_MEMORY_RESERVED  2
+
+typedef struct multiboot_memory_map {
+    uint32_t size;
+    uint32_t addr; // Simplified for 32-bit OS, technically addr_low/high
+    uint32_t addr_high;
+    uint32_t len;  // Simplified
+    uint32_t len_high;
+    uint32_t type;
+} __attribute__((packed)) multiboot_memory_map_t;
+
 typedef struct multiboot_header {
     uint32_t magic;
     uint32_t flags;

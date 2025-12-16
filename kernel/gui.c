@@ -10,8 +10,16 @@ gui_manager_t gui_mgr;
 // Helper function to check if a point is within a rectangle
 int point_in_rect(point_t p, rect_t r)
 {
-    return p.x >= r.x && p.x < r.x + r.width &&
-           p.y >= r.y && p.y < r.y + r.height;
+    return (p.x >= r.x && p.x < r.x + r.width &&
+            p.y >= r.y && p.y < r.y + r.height);
+}
+
+// Helper function to check if two rectangles intersect
+static int rect_intersects(rect_t r1, rect_t r2) {
+    return !(r1.x + r1.width <= r2.x || 
+             r2.x + r2.width <= r1.x ||
+             r1.y + r1.height <= r2.y ||
+             r2.y + r2.height <= r1.y);
 }
 
 // Recursive helper to find top-most element
@@ -135,6 +143,14 @@ void gui_draw_recursive(gui_renderer_t *renderer, gui_element_t *element)
     if (!element)
         return;
 
+    // OPTIMIZATION: Skip elements outside dirty region
+    if (gui_mgr.needs_redraw && gui_mgr.dirty_rect.width > 0 && gui_mgr.dirty_rect.height > 0) {
+        if (!rect_intersects(element->bounds, gui_mgr.dirty_rect)) {
+            // Element is completely outside dirty region, skip it and all children
+            return;
+        }
+    }
+
     // Draw the element itself
     if (element->draw)
     {
@@ -197,6 +213,15 @@ void gui_invalidate_rect(rect_t rect) {
     }
 }
 
+// Mouse Capture Implementation
+void gui_capture_mouse(gui_element_t *element) {
+    gui_mgr.captured_element = element;
+}
+
+void gui_release_mouse(void) {
+    gui_mgr.captured_element = NULL;
+}
+
 // Main GUI update/draw loop
 void gui_run(void)
 {
@@ -219,7 +244,18 @@ void gui_run(void)
         gui_element_t *target = NULL;
         
         // Routing Logic
-        if (event->type == GUI_EVENT_KEY_PRESS) {
+        if (gui_mgr.captured_element) {
+            // Priority: Captured Element receives ALL mouse events
+            if (event->type == GUI_EVENT_MOUSE_DOWN || 
+                event->type == GUI_EVENT_MOUSE_UP || 
+                event->type == GUI_EVENT_MOUSE_MOVE ||
+                event->type == GUI_EVENT_MOUSE_SCROLL) {
+                target = gui_mgr.captured_element;
+            } else if (event->type == GUI_EVENT_KEY_PRESS) {
+                 target = gui_mgr.focused_element;
+            }
+        }
+        else if (event->type == GUI_EVENT_KEY_PRESS) {
             target = gui_mgr.focused_element;
             if (!target) target = gui_mgr.root; 
             if(target) gui_invalidate_rect(target->bounds); // Invalidate target to be safe
@@ -237,35 +273,54 @@ void gui_run(void)
 
         if (target && target->event_handler)
         {
-            // Simple optimization:
-            // If mouse move, ONLY invalidate if needed? 
-            // Handlers should call invalidate.
-            // For now, if we don't trust handlers, we invalidate bounds of target.
-            // But MOUSE_MOVE on root (wallpaper) invalidating full screen causes lag.
-            
+            // OPTIMIZATION: Track state changes to avoid unnecessary invalidations
             int prev_state = target->state;
+            gui_element_t *prev_hovered = gui_mgr.hovered_element;
+            
             target->event_handler(target, event);
             
-            // Check state change or generic force?
-            // If target != root, invalidate target bounds.
-            if (target != gui_mgr.root || event->type != GUI_EVENT_MOUSE_MOVE) {
-                 // But if target is root (desktop), invalidating it forces full redraw?
-                 // Desktop handler doesn't change visualization often on move.
-                 // Only icons hover?
-                 // Let's rely on manual invalidation in desktop handler?
-                 // Or safe default: if non-root, invalidate.
-                 if (target != gui_mgr.root) {
-                      gui_invalidate_rect(target->bounds);
-                 }
-                 // If root, we skip unless handler set dirty.
+            // Only invalidate on actual state changes or non-root elements
+            if (event->type == GUI_EVENT_MOUSE_MOVE) {
+                // For mouse moves, only invalidate if state changed or hover changed
+                if ((int)target->state != prev_state) {
+                    gui_invalidate_rect(target->bounds);
+                }
+                // Update hovered element tracking
+                if (target != gui_mgr.root) {
+                    if (prev_hovered != target) {
+                        if (prev_hovered && prev_hovered != gui_mgr.root) {
+                            gui_invalidate_rect(prev_hovered->bounds);
+                        }
+                        gui_mgr.hovered_element = target;
+                        gui_invalidate_rect(target->bounds);
+                    }
+                }
+            } else {
+                // For other events, invalidate if state changed or if non-root
+                if ((int)target->state != prev_state || target != gui_mgr.root) {
+                    gui_invalidate_rect(target->bounds);
+                }
             }
-            if ((int)target->state != prev_state) gui_invalidate_rect(target->bounds);
         }
         memory_free(event);
     }
 
     // Draw all elements only if dirty
     if (gui_mgr.needs_redraw) {
+        // LAYER-BASED RENDERING: Redraw background first if needed
+        if (gui_mgr.needs_background_redraw) {
+            // Redraw desktop background (wallpaper + top bar + dock) for dirty region
+            extern void desktop_draw_rect(int x, int y, int w, int h);
+            desktop_draw_rect(gui_mgr.background_dirty_rect.x, 
+                            gui_mgr.background_dirty_rect.y,
+                            gui_mgr.background_dirty_rect.width,
+                            gui_mgr.background_dirty_rect.height);
+            
+            // Reset background redraw state
+            gui_mgr.needs_background_redraw = 0;
+            gui_mgr.background_dirty_rect = (rect_t){0, 0, 0, 0};
+        }
+        
         // Set clip rect in graphics (draw to backbuffer)
         graphics_set_clip(gui_mgr.dirty_rect);
         
@@ -332,6 +387,10 @@ void gui_init(int screen_width, int screen_height, gui_renderer_t *renderer)
     gui_mgr.hovered_element = NULL;
     gui_mgr.needs_redraw = 1; // Initial draw
     gui_mgr.dirty_rect = (rect_t){0, 0, screen_width, screen_height}; // Full screen dirty
+    
+    // Initialize background redraw tracking
+    gui_mgr.needs_background_redraw = 0;
+    gui_mgr.background_dirty_rect = (rect_t){0, 0, 0, 0};
 }
 
 // Implement missing functions
@@ -416,15 +475,15 @@ void gui_draw_window(gui_renderer_t *renderer, gui_element_t *element)
     int content_y = bounds.y + title_h;
     draw_line(bounds.x, content_y, bounds.x + bounds.width, content_y, 0xE0E0E0);
     
-    // 3. Traffic Lights (Left Aligned, Centered in Title)
+    // 3. Traffic Lights (RIGHT Aligned, macOS style)
     // Vertical center of title bar = y + title_h / 2
     int btn_y = bounds.y + (title_h / 2);
-    int start_btn_x = bounds.x + 15;
     int spacing = 20;
+    int start_btn_x = bounds.x + bounds.width - 15 - (spacing * 2) - 12; // Right side
     
-    draw_circle_filled(start_btn_x, btn_y, 6, red); 
-    draw_circle_filled(start_btn_x + spacing, btn_y, 6, yellow);
-    draw_circle_filled(start_btn_x + spacing * 2, btn_y, 6, green);
+    draw_circle_filled(start_btn_x, btn_y, 6, red);                    // Close
+    draw_circle_filled(start_btn_x + spacing, btn_y, 6, yellow);       // Minimize
+    draw_circle_filled(start_btn_x + spacing * 2, btn_y, 6, green);    // Maximize
     
     // 4. Title Text (Centered)
     if (win->title) {
@@ -473,6 +532,19 @@ void gui_draw_window(gui_renderer_t *renderer, gui_element_t *element)
             node = node->next;
         }
     }
+    
+    // 6. Draw Children (Content) being clipped to window bounds? 
+    // For now simple recursion.
+    if (element->children) {
+        list_node_t *child_node = element->children->head;
+        while (child_node) {
+             gui_element_t *child = (gui_element_t*)child_node->data;
+             if (child->draw) {
+                 child->draw(renderer, child);
+             }
+             child_node = child_node->next;
+        }
+    }
 }
 
 
@@ -482,117 +554,119 @@ void gui_window_event_handler(gui_element_t *element, gui_event_t *event)
     gui_window_t *win = (gui_window_t *)element;
     int tabs_area_height = (win->tabs && win->tabs->size > 0) ? 24 : 0;
     
+    // Always bring to front on any interaction
     if (event->type == GUI_EVENT_MOUSE_DOWN) {
         gui_bring_to_front(element);
+    }
+    
+    // Handle Window Controls (Traffic Lights) - RIGHT SIDE - Priority over drag
+    if (event->type == GUI_EVENT_MOUSE_DOWN) {
+        int x = event->mouse.pos.x;
+        int y = event->mouse.pos.y;
         
-        // Check Tab Click
-        if (tabs_area_height > 0) {
-             int tab_y = win->base.bounds.y + TITLE_BAR_HEIGHT; // Assuming 24 is title bar height macro
-             if (event->mouse.pos.y >= tab_y && event->mouse.pos.y < tab_y + tabs_area_height) {
-                 int rel_x = event->mouse.pos.x - win->base.bounds.x;
-                 int tab_w = win->base.bounds.width / win->tabs->size;
-                 int idx = rel_x / tab_w;
-                 
-                 list_node_t *node = win->tabs->head;
-                 int i = 0;
-                 while(node) {
-                     if (i == idx) {
-                         gui_tab_t *clicked_tab = (gui_tab_t*)node->data;
-                         if (win->active_tab != clicked_tab) {
-                             // Hide old tab content
-                             if (win->active_tab && win->active_tab->content) {
-                                 // Remove from children list? Or just set invisible?
-                                 // Current simple implementation: recreate children list or remove old node.
-                                 // Better: gui_remove_element(active_tab->content);
-                                 gui_remove_element(win->active_tab->content); // Helper used for detach
-                             }
-                             
-                             win->active_tab = clicked_tab;
-                             
-                             // Show new tab content
-                             if (win->active_tab && win->active_tab->content) {
-                                  gui_add_element((gui_element_t*)win, win->active_tab->content);
-                             }
-                             
-                             gui_mgr.needs_redraw = 1;
-                         }
-                         return; // Handled
-                     }
-                     node = node->next;
-                     i++;
+        int title_h = 30;
+        int btn_y = win->base.bounds.y + (title_h / 2);
+        int spacing = 20;
+        int start_btn_x = win->base.bounds.x + win->base.bounds.width - 15 - (spacing * 2) - 12;
+        
+        // Check if click is in title bar area
+        if (y >= win->base.bounds.y && y < win->base.bounds.y + title_h) {
+            // Close Button (Red) - First button on right
+            int dx = x - start_btn_x;
+            int dy = y - btn_y;
+            if (dx*dx + dy*dy <= 36) { // radius 6, so 6*6 = 36
+                 // Close Window
+                 win->base.bounds.x = -1000; // Hide offscreen
+                 gui_mgr.needs_redraw = 1;
+                 return;
+            }
+            
+            // Minimize Button (Yellow) - Middle button
+            dx = x - (start_btn_x + spacing);
+            if (dx*dx + dy*dy <= 36) {
+                 // Minimize (hide offscreen but mark as minimized)
+                 if (!win->is_minimized) {
+                     win->is_minimized = 1;
+                     win->saved_bounds = win->base.bounds; // Save position
+                     win->base.bounds.x = -1000; // Hide
+                     gui_mgr.needs_redraw = 1;
                  }
+                 return;
+            }
+            
+            // Maximize Button (Green) - Last button on right
+            dx = x - (start_btn_x + spacing * 2);
+            if (dx*dx + dy*dy <= 36) {
+                 if (!win->is_maximized) {
+                      // Save current bounds
+                      win->saved_bounds = win->base.bounds;
+                      
+                      // Maximize to fill screen (leave space for top bar and dock)
+                      // Top bar: 24px
+                      // Dock: ~90px (70px height + 20px margin)
+                      win->base.bounds.x = 0;
+                      win->base.bounds.y = 24; // Below top bar
+                      win->base.bounds.width = gui_mgr.screen_width;
+                      win->base.bounds.height = gui_mgr.screen_height - 24 - 90; // Top bar + dock space
+                      win->is_maximized = 1;
+                      
+                      // Resize child content
+                      if (win->tabs) {
+                          list_node_t *node = win->tabs->head;
+                          while(node) {
+                              gui_tab_t *tab = (gui_tab_t*)node->data;
+                              if(tab->content) {
+                                   int content_h = win->base.bounds.height - (TITLE_BAR_HEIGHT + 24);
+                                   tab->content->bounds.width = win->base.bounds.width;
+                                   tab->content->bounds.height = content_h;
+                              }
+                              node = node->next;
+                          }
+                      }
+                      
+                      gui_invalidate_rect(win->base.bounds);
+                  } else {
+                      // Restore
+                      win->base.bounds = win->saved_bounds;
+                      win->is_maximized = 0;
+                      gui_invalidate_rect(win->base.bounds);
+                  }
+                  gui_mgr.needs_redraw = 1;
+                  return;
              }
-        }
+         }
+     }
+
+    // Dragging Logic
+    if (event->type == GUI_EVENT_MOUSE_DOWN) {
+        // Allow dragging if clicked in Title Bar OR Tab Bar (if unused by tab click)
+        int safe_drag_y = win->base.bounds.y + TITLE_BAR_HEIGHT + tabs_area_height;
         
-        // Check Title Bar Click
-        if (event->mouse.pos.y >= win->base.bounds.y && event->mouse.pos.y < win->base.bounds.y + TITLE_BAR_HEIGHT) {
-            
-            int rel_x = event->mouse.pos.x - win->base.bounds.x;
-            // int width = win->base.bounds.width; // Unused for left buttons
-            
-            // Traffic Lights are on the LEFT now
-            // Red (Close): ~10px to 22px
-            // Yellow (Min): ~30px to 42px
-            // Green (Max): ~50px to 62px
-            // Padding 10px, Size 12px, Spacing 8px => 
-            // 10..22, 30..42, 50..62
-            
-            // Check Red (Close)
-            if (rel_x >= 10 && rel_x <= 22) {
-                 win->base.bounds.x = -9999; 
-                 gui_mgr.needs_redraw = 1;
-                 return;
-            }
-            
-            // Check Yellow (Minimize)
-            if (rel_x >= 30 && rel_x <= 42) {
-                 win->is_minimized = !win->is_minimized;
-                 if (win->is_minimized) {
-                     win->saved_bounds = win->base.bounds;
-                     win->base.bounds.height = TITLE_BAR_HEIGHT;
-                 } else {
-                     win->base.bounds.height = win->saved_bounds.height;
-                 }
-                 gui_mgr.needs_redraw = 1;
-                 return;
-            }
-            
-            // Check Green (Maximize)
-            if (rel_x >= 50 && rel_x <= 62) {
-                 if (win->is_maximized) {
-                     win->base.bounds = win->saved_bounds;
-                     win->is_maximized = 0;
-                 } else {
-                     win->saved_bounds = win->base.bounds;
-                     win->base.bounds.x = 0;
-                     win->base.bounds.y = 24; // Below top bar
-                     win->base.bounds.width = gui_mgr.screen_width;
-                     win->base.bounds.height = gui_mgr.screen_height - 24 - 60; // Top bar and Dock space
-                     win->is_maximized = 1;
-                 }
-                 gui_mgr.needs_redraw = 1;
-                 return;
-            }
-            
+        if (event->mouse.pos.y < safe_drag_y) {
             // Start Dragging (if in title bar and not a button)
             if (!win->is_maximized) {
                 win->is_dragging = 1;
                 win->drag_offset.x = event->mouse.pos.x - win->base.bounds.x;
                 win->drag_offset.y = event->mouse.pos.y - win->base.bounds.y;
-                gui_mgr.needs_redraw = 1;
+                
+                // CAPTURE MOUSE: Receive events even if cursor leaves window
+                gui_capture_mouse((gui_element_t*)win);
             }
         }
     }
     else if (event->type == GUI_EVENT_MOUSE_UP) {
         if (win->is_dragging) {
             win->is_dragging = 0;
-            gui_mgr.needs_redraw = 1;
+            // RELEASE MOUSE: Stop capturing
+            gui_release_mouse();
         }
     }
     else if (event->type == GUI_EVENT_MOUSE_MOVE) {
         if (win->is_dragging && !win->is_maximized) {
-            win->base.bounds.x = event->mouse.pos.x - win->drag_offset.x;
-            win->base.bounds.y = event->mouse.pos.y - win->drag_offset.y;
+            int new_x = event->mouse.pos.x - win->drag_offset.x;
+            int new_y = event->mouse.pos.y - win->drag_offset.y;
+            
+            gui_set_position((gui_element_t*)win, new_x, new_y);
             gui_mgr.needs_redraw = 1;
         }
     }
@@ -694,26 +768,54 @@ void gui_remove_element(gui_element_t *element) {
     }
 }
 
+// Helper function to recursively update child positions without invalidation
+static void gui_update_child_positions_recursive(gui_element_t *element, int dx, int dy) {
+    if (!element || !element->children) return;
+    
+    list_node_t *node = element->children->head;
+    while(node) {
+        gui_element_t *child = (gui_element_t*)node->data;
+        child->bounds.x += dx;
+        child->bounds.y += dy;
+        // Recursively update grandchildren
+        gui_update_child_positions_recursive(child, dx, dy);
+        node = node->next;
+    }
+}
+
 void gui_set_position(gui_element_t *element, int x, int y) {
     if (!element) return;
+    
     int dx = x - element->bounds.x;
     int dy = y - element->bounds.y;
+    
+    // Early exit if no movement
+    if (dx == 0 && dy == 0) return;
+    
+    // Calculate union of old and new bounds for single invalidation
+    rect_t old_bounds = element->bounds;
     
     element->bounds.x = x;
     element->bounds.y = y;
     
-    // Move children recursively (if relative)
-    // But here children are absolute usually?
-    // Let's implement recursive move for containers
-    if (element->children) {
-         list_node_t *node = element->children->head;
-         while(node) {
-             gui_element_t *child = (gui_element_t*)node->data;
-             gui_set_position(child, child->bounds.x + dx, child->bounds.y + dy);
-             node = node->next;
-         }
+    // Move all children recursively
+    gui_update_child_positions_recursive(element, dx, dy);
+    
+    // CRITICAL: Mark background for redraw at old position
+    // This ensures wallpaper shows through instead of artifacts
+    if (element->type == GUI_ELEMENT_WINDOW) {
+        gui_mgr.needs_background_redraw = 1;
+        if (gui_mgr.background_dirty_rect.width == 0) {
+            gui_mgr.background_dirty_rect = old_bounds;
+        } else {
+            gui_mgr.background_dirty_rect = util_rect_union(gui_mgr.background_dirty_rect, old_bounds);
+        }
     }
+    
+    // Invalidate union of old and new positions (covers both element and all children)
+    gui_invalidate_rect(util_rect_union(old_bounds, element->bounds));
 }
+
 
 void gui_window_add_tab(gui_window_t *window, const char *title, gui_element_t *content) {
     if (!window || !title) return;

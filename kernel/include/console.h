@@ -16,4 +16,8 @@ void console_set_color(uint8_t fg, uint8_t bg);
 // Clear screen
 void console_clear();
 
+// Serial Port
+void serial_init();
+void serial_write(const char *str);
+
 #endif // CONSOLE_H

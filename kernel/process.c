@@ -43,6 +43,20 @@ process_t *process_create(const char *name, void (*entry_point)(void)) {
     return proc;
 }
 
+#include "elf.h"
+process_t *process_create_elf(const char *name, const char *filename) {
+    uint32_t entry_point = elf_load_file(filename);
+    if (entry_point == 0) {
+        console_log("[PROCESS] Failed to load ELF: ");
+        console_log(filename);
+        console_log("\n");
+        return NULL;
+    }
+    
+    // Create generic process with this entry point
+    return process_create(name, (void (*)(void))entry_point);
+}
+
 void process_schedule(void) {
     // Round Robin Stub
     if (!process_list) return;

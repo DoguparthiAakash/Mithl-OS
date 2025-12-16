@@ -1,4 +1,5 @@
 #include "terminal.h"
+#include "commands.h"
 #include "desktop.h"
 #include "memory.h"
 #include "memory.h"
@@ -93,8 +94,7 @@ void terminal_show(void) {
     if (active_term && active_term->window) {
          // Reset position if it was hidden/closed
          if (active_term->window->base.bounds.x == -9999) {
-             active_term->window->base.bounds.x = 100;
-             active_term->window->base.bounds.y = 100;
+             gui_set_position((gui_element_t*)active_term->window, 100, 100);
          }
          
          // Bring to front (Conceptually)
@@ -132,7 +132,7 @@ static void terminal_put_char(terminal_t *term, char c) {
     }
 }
 
-static void terminal_print(terminal_t *term, const char *str) {
+void terminal_print(terminal_t *term, const char *str) {
     while (*str) {
         terminal_put_char(term, *str++);
     }
@@ -161,21 +161,49 @@ void terminal_run_command(terminal_t *term, const char *command) {
         return;
     }
     
-    // Built-in Commands using VFS
+    // Try new command system first
+    extern void execute_command(terminal_t *term, const char *cmdline);
+    extern const command_t* get_commands(void);
+    
+    const command_t *cmds = get_commands();
+    int found = 0;
+    
+    // Parse command name
+    char cmd_name[64];
+    int i = 0;
+    while (command[i] && command[i] != ' ' && i < 63) {
+        cmd_name[i] = command[i];
+        i++;
+    }
+    cmd_name[i] = 0;
+    
+    // Check if it's in new command system
+    for (int j = 0; cmds[j].name; j++) {
+        if (strcmp(cmd_name, cmds[j].name) == 0) {
+            execute_command(term, command);
+            found = 1;
+            break;
+        }
+    }
+    
+    if (found) {
+        terminal_print(term, PROMPT);
+        return;
+    }
+    
+    // Built-in Commands using VFS (legacy)
     if (memcmp(command, "ls", 2) == 0) {
         // List root or current directory
         extern fs_node_t *fs_root;
         fs_node_t *node = fs_root; // Should be current_dir ideally
         
-        // Find /home/aakash if specific path support added later
-        // For now, list root
         if (node) {
              struct dirent *d;
-             int i = 0;
-             while ((d = readdir_fs(node, i)) != 0) {
+             int idx = 0;
+             while ((d = readdir_fs(node, idx)) != 0) {
                  terminal_print(term, d->name);
                  terminal_print(term, "  ");
-                 i++;
+                 idx++;
              }
              terminal_print(term, "\n");
         } else {
@@ -183,21 +211,15 @@ void terminal_run_command(terminal_t *term, const char *command) {
         }
     }
     else if (memcmp(command, "cat ", 4) == 0) {
-        // Simple cat implementation: cat filename
+        // Simple cat implementation
         char filename[64];
         char *arg = (char*)command + 4;
-        while(*arg == ' ') arg++; // skip spaces
+        while(*arg == ' ') arg++;
         strcpy(filename, arg);
         
         extern fs_node_t *fs_root;
-        // Search in root for now (flat structure limitation of simple finddir usage unless we traverse)
-        // Assume full path or just file in root?
-        // Let's retry finding in /home/aakash for realism?
-        // For simplicity: Search recursively or just hardcode checking common paths?
-        
         fs_node_t *file = finddir_fs(fs_root, filename);
         if (!file) {
-             // Check home/aakash
              fs_node_t *home = finddir_fs(fs_root, "home");
              if (home) {
                  fs_node_t *user = finddir_fs(home, "aakash");
@@ -216,16 +238,21 @@ void terminal_run_command(terminal_t *term, const char *command) {
         }
     }
     else if (memcmp(command, "pwd", 3) == 0) {
-        terminal_print(term, "/\n");
+        terminal_print(term, "/home/aakash\n");
     }
     else if (memcmp(command, "whoami", 6) == 0) {
         terminal_print(term, "aakash\n");
     }
     else if (memcmp(command, "date", 4) == 0) {
-        terminal_print(term, "Sun Dec 14 15:30:00 IST 2025\n");
+        terminal_print(term, "Sun Dec 17 00:36:00 IST 2025\n");
     }
     else if (memcmp(command, "help", 4) == 0) {
-        terminal_print(term, "Available commands: ls, cat, pwd, whoami, date, clear, hello, snake, guess\n");
+        terminal_print(term, "Available commands:\n");
+        terminal_print(term, "System: shutdown, restart, reboot, halt, poweroff\n");
+        terminal_print(term, "Info: uname, free, uptime, whoami, date, pwd\n");
+        terminal_print(term, "Files: ls, cat, mkdir, rm, touch, cp, mv\n");
+        terminal_print(term, "Utils: echo, clear, help\n");
+        terminal_print(term, "Apps: hello, snake, guess\n");
     }
     else if (memcmp(command, "hello", 5) == 0) {
         extern int hello_app(terminal_t *term);
@@ -285,39 +312,8 @@ static void terminal_draw_content(gui_renderer_t *renderer, gui_element_t *eleme
             point_t pos = {content_x, content_y + row * 12}; // 12px line height
             char *line = active_term->buffer[row];
             
-            // Check for prompt pattern "aakash@mithl:~$ " or similar
-            // Hacky detection: "aakash@mithl"
-            char *prompt_start = strstr(line, "aakash@mithl");
-            char *path_sep = strstr(line, ":");
-            char *suffix = strstr(line, "$");
-            
-            if (prompt_start == line && path_sep && suffix && path_sep > prompt_start && suffix > path_sep) {
-                // We have a prompt line!
-                // 1. Draw "aakash@mithl" in GREEN
-                int len_user = path_sep - prompt_start;
-                char user_part[32];
-                strncpy(user_part, line, len_user);
-                user_part[len_user] = '\0';
-                
-                renderer->draw_text(user_part, pos, 0x00FF00); // Green
-                
-                // 2. Draw ":path" in BLUE
-                // Calc offset
-                pos.x += len_user * 8; 
-                int len_path = (suffix - path_sep); // includes ':' but stops before '$'
-                char path_part[64];
-                strncpy(path_part, path_sep, len_path);
-                path_part[len_path] = '\0';
-                
-                renderer->draw_text(path_part, pos, 0x0000FF); // Blue
-                
-                // 3. Draw "$ " and rest in WHITE
-                pos.x += len_path * 8;
-                renderer->draw_text(suffix, pos, 0xFFFFFF); // White
-            } else {
-                // Normal line
-                renderer->draw_text(line, pos, active_term->fg_color); 
-            }
+            // Simple Drawing (Optimized)
+            renderer->draw_text(line, pos, active_term->fg_color);
         }
         
         // Draw Cursor (Block)

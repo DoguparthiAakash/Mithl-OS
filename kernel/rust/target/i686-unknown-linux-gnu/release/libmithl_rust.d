@@ -1,1 +1,1 @@
-/media/aakash/Hard\ Drive\ 1/Project/Projects/Mithl\ OS/Mithl\ OS/kernel/rust/target/i686-unknown-linux-gnu/release/libmithl_rust.a: /media/aakash/Hard\ Drive\ 1/Project/Projects/Mithl\ OS/Mithl\ OS/kernel/rust/src/lib.rs /media/aakash/Hard\ Drive\ 1/Project/Projects/Mithl\ OS/Mithl\ OS/kernel/rust/src/shell.rs
+/home/aakash/Downloads/Mithl-OS/kernel/rust/target/i686-unknown-linux-gnu/release/libmithl_rust.a: /home/aakash/Downloads/Mithl-OS/kernel/rust/src/lib.rs /home/aakash/Downloads/Mithl-OS/kernel/rust/src/shell.rs
