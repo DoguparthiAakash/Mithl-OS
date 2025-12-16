@@ -1,0 +1,18 @@
+[package]
+name = "mithl_rust"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+# We might need a buddy allocator crate if we want to skip implementing one
+# buddy_system_allocator = "0.9" 
+# For now, no external deps to keep build simple and offline-friendly if possible
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
