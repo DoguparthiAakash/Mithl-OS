@@ -96,6 +96,7 @@ iso: kernel.elf
 	echo 'set default=0' >> bootiso/boot/grub/grub.cfg
 	echo '' >> bootiso/boot/grub/grub.cfg
 	echo 'insmod all_video' >> bootiso/boot/grub/grub.cfg
+	echo 'set gfxpayload=keep' >> bootiso/boot/grub/grub.cfg
 	echo '' >> bootiso/boot/grub/grub.cfg
 	echo 'menuentry "Mithl OS" {' >> bootiso/boot/grub/grub.cfg
 	echo '  multiboot2 /boot/kernel.elf' >> bootiso/boot/grub/grub.cfg

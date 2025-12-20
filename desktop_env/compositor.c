@@ -13,6 +13,9 @@
 #include <apps/text_editor/text_editor.h>
 #include <apps/settings/settings.h>
 #include <app_icons.h> // Added by user
+#include <console.h>
+#include <bootlogo.h>
+#include <memory.h>
 
 /* 
  * Mithl OS Compositor / Desktop Environment
@@ -38,6 +41,7 @@ void desktop_root_handler(gui_element_t *element, gui_event_t *event);
 void toggle_start_menu(void);
 void draw_top_bar(rect_t clip);
 void draw_dock(rect_t clip);
+static int get_dock_rect(rect_t *r);
 
 // Procedural Wallpaper to mimic "Abstract Paper Cut"
 // Using large circles with gradients/alpha
@@ -54,6 +58,7 @@ static int selected_icon = -1; // -1: None, 0: Computer, 1: Documents, 2: Termin
 // Wrapper for GUI system to draw the desktop
 void desktop_draw_element(gui_renderer_t *renderer, gui_element_t *element) {
     (void)renderer;
+    (void)element;
     
     // Optimize: Set clip rect to dirty area to prevent full wallpaper redraw
     graphics_set_clip(gui_mgr.dirty_rect);
@@ -122,13 +127,28 @@ void desktop_root_handler(gui_element_t *element, gui_event_t *event) {
         int x = event->mouse.pos.x;
         int y = event->mouse.pos.y;
         
-        // 1. Check Top Bar (Apple Menu)
+        // 1. Check Start Bubble (Bottom Left of Dock)
+        rect_t dock;
+        get_dock_rect(&dock);
+        
+        int bubble_w = 70;
+        int bubble_h = 70;
+        int bubble_x = dock.x - bubble_w - 15;
+        int bubble_y = dock.y;
+        
+        if (x >= bubble_x && x <= bubble_x + bubble_w && y >= bubble_y && y <= bubble_y + bubble_h) {
+             toggle_start_menu();
+             return;
+        }
+
+        /* Top Bar Removed
         if (y < 24) {
              if (x < 50) {
                  toggle_start_menu(); // Apple Menu
              }
              return;
         }
+        */
 
         // 2. Dock Icons (Center Bottom)
         // Constants matching draw_dock
@@ -378,9 +398,21 @@ void draw_apple_menu(gui_renderer_t *renderer, gui_element_t *element) {
 }
 
 void toggle_start_menu(void) {
+    // Calculate bubble position again for alignment
+    rect_t dock;
+    get_dock_rect(&dock);
+    int bubble_w = 70;
+    int bubble_x = dock.x - bubble_w - 15;
+    int bubble_y = dock.y;
+    
+    // Y = Bubble Y - Menu Height - Gap
+    int menu_h = 100;
+    int menu_y = bubble_y - menu_h - 10;
+
     if (!start_menu) {
-        // Create Apple Menu (Dropdown at Top-Left)
-        start_menu = gui_create_window("Start", 5, 24, 160, 100);
+        // Create Start Menu (Popup near bubble)
+        
+        start_menu = gui_create_window("Start", bubble_x, menu_y, 160, menu_h);
         if (start_menu) {
              start_menu->base.background_color = 0xFFFFFF; 
              
@@ -392,8 +424,8 @@ void toggle_start_menu(void) {
              gui_bring_to_front((gui_element_t*)start_menu);
              
              // Items
-             // 1. About This Mac
-             gui_label_t *l1 = gui_create_label("About This Mac", 10, 10, 140, 20);
+             // 1. About
+             gui_label_t *l1 = gui_create_label("About Mithl OS", 10, 10, 140, 20);
              l1->base.event_handler = btn_about_click;
              l1->base.background_color = 0xFFFFFF; 
              gui_add_element((gui_element_t*)start_menu, (gui_element_t*)l1);
@@ -412,11 +444,14 @@ void toggle_start_menu(void) {
         }
     } else {
         if (start_menu->base.bounds.x == -1000) {
-             start_menu->base.bounds.x = 5; // Show at Top-Left
+             start_menu->base.bounds.x = bubble_x; // Show
+             start_menu->base.bounds.y = menu_y;   // Enforce Y
              gui_mgr.focused_element = (gui_element_t*)start_menu;
              gui_bring_to_front((gui_element_t*)start_menu);
+             serial_write("[GUI] Start Menu Opened.\n");
         } else {
              start_menu->base.bounds.x = -1000; // Hide
+             serial_write("[GUI] Start Menu Closed.\n");
         }
         gui_mgr.needs_redraw = 1;
     }
@@ -430,17 +465,267 @@ void draw_taskbar(void) {
     // Taskbar removed in favor of Dock + Top Bar
 }
 
+// --- Bubble UI Constants ---
+// Dock is centered. Bubbles are to the left and right.
+static int get_dock_rect(rect_t *r) {
+    int num_icons = 5;
+    int icon_size = 48;
+    int pad = 16;
+    int dock_w = num_icons * (icon_size + pad) + pad;
+    int dock_h = 70;
+    int dock_x = (gui_mgr.screen_width - dock_w) / 2;
+    int dock_y = gui_mgr.screen_height - dock_h - 10;
+    
+    if (r) *r = (rect_t){dock_x, dock_y, dock_w, dock_h};
+    return dock_x;
+}
+
+// Helper to get average luminance of wallpaper under a rect
+static int get_average_luminance(rect_t r) {
+    // wallpaper_data is a static array, address is always non-null
+
+    
+    int screen_w = gui_mgr.screen_width;
+    int screen_h = gui_mgr.screen_height;
+
+    // Clamp to screen bounds
+    if (r.x < 0) r.x = 0;
+    if (r.y < 0) r.y = 0;
+    if (r.x + r.width > screen_w) r.width = screen_w - r.x;
+    if (r.y + r.height > screen_h) r.height = screen_h - r.y;
+
+    uint64_t total_lum = 0;
+    int count = 0;
+    
+    // Sample every few pixels for performance
+    for (int y = r.y; y < r.y + r.height; y += 4) {
+        for (int x = r.x; x < r.x + r.width; x += 4) {
+            uint32_t color = wallpaper_data[y * screen_w + x];
+            // Format is usually ARGB or XRGB.
+            uint8_t r_val = (color >> 16) & 0xFF;
+            uint8_t g_val = (color >> 8) & 0xFF;
+            uint8_t b_val = (color) & 0xFF; // Only B
+            // Perceived luminance formula
+            total_lum += (r_val * 299 + g_val * 587 + b_val * 114) / 1000;
+            count++;
+        }
+    }
+    
+    if (count == 0) return 0;
+    return total_lum / count;
+}
+
+// Helper to get pixel from bootlogo with safety checks
+static uint32_t get_logo_pixel(int x, int y) {
+    if (x < 0) x = 0; 
+    if (y < 0) y = 0;
+    if (x >= bootlogo_width) x = bootlogo_width - 1;
+    if (y >= bootlogo_height) y = bootlogo_height - 1;
+    return bootlogo_data[y * bootlogo_width + x];
+}
+
+static void draw_scaled_os_logo(int x, int y, int w, int h) {
+    int src_w = bootlogo_width;
+    int src_h = bootlogo_height;
+    
+    // Target size ~64 width to fill bubble nicely
+    int target_w = 64; 
+    int target_h = (src_h * target_w) / src_w;
+    
+    int offset_x = x + (w - target_w) / 2;
+    int offset_y = y + (h - target_h) / 2;
+
+    // Fixed point 16.16
+    #define FP_SHIFT 16
+    
+    // Calculate steps
+    int step_x = (src_w << FP_SHIFT) / target_w;
+    int step_y = (src_h << FP_SHIFT) / target_h;
+    
+    // Allocate temp buffer for the rendered logo
+    uint32_t buffer_size = target_w * target_h * sizeof(uint32_t);
+    uint32_t *logo_buf = (uint32_t*)memory_alloc(buffer_size);
+    
+    if (!logo_buf) return;
+    
+    // 1. Render Bilinear Logo to Buffer
+    for (int dy = 0; dy < target_h; dy++) {
+        int v_fp = dy * step_y;
+        for (int dx = 0; dx < target_w; dx++) {
+            int u_fp = dx * step_x;
+            
+            // Coordinates in source (integer part)
+            int src_x = u_fp >> FP_SHIFT;
+            int src_y = v_fp >> FP_SHIFT;
+            
+            // Weights
+            int w_x = u_fp & 0xFFFF;
+            int w_y = v_fp & 0xFFFF;
+            
+            // Neighbor Check
+            // Safety against OOB access
+            uint32_t c00 = get_logo_pixel(src_x, src_y);
+            uint32_t c10 = get_logo_pixel(src_x + 1, src_y);
+            uint32_t c01 = get_logo_pixel(src_x, src_y + 1);
+            uint32_t c11 = get_logo_pixel(src_x + 1, src_y + 1);
+            
+            // Bilinear Interp
+            int a00 = (c00 >> 24) & 0xFF; int r00 = (c00 >> 16) & 0xFF; int g00 = (c00 >> 8) & 0xFF; int b00 = c00 & 0xFF;
+            int a10 = (c10 >> 24) & 0xFF; int r10 = (c10 >> 16) & 0xFF; int g10 = (c10 >> 8) & 0xFF; int b10 = c10 & 0xFF;
+            int a01 = (c01 >> 24) & 0xFF; int r01 = (c01 >> 16) & 0xFF; int g01 = (c01 >> 8) & 0xFF; int b01 = c01 & 0xFF;
+            int a11 = (c11 >> 24) & 0xFF; int r11 = (c11 >> 16) & 0xFF; int g11 = (c11 >> 8) & 0xFF; int b11 = c11 & 0xFF;
+            
+            int inv_w_x = 65536 - w_x;
+            int a0 = (a00 * inv_w_x + a10 * w_x) >> 16;
+            int r0 = (r00 * inv_w_x + r10 * w_x) >> 16;
+            int g0 = (g00 * inv_w_x + g10 * w_x) >> 16;
+            int b0 = (b00 * inv_w_x + b10 * w_x) >> 16;
+            
+            int a1 = (a01 * inv_w_x + a11 * w_x) >> 16;
+            int r1 = (r01 * inv_w_x + r11 * w_x) >> 16;
+            int g1 = (g01 * inv_w_x + g11 * w_x) >> 16;
+            int b1 = (b01 * inv_w_x + b11 * w_x) >> 16;
+            
+            int inv_w_y = 65536 - w_y;
+            int a = (a0 * inv_w_y + a1 * w_y) >> 16;
+            int r = (r0 * inv_w_y + r1 * w_y) >> 16;
+            int g = (g0 * inv_w_y + g1 * w_y) >> 16;
+            int b = (b0 * inv_w_y + b1 * w_y) >> 16;
+            
+            logo_buf[dy * target_w + dx] = (a << 24) | (r << 16) | (g << 8) | b;
+        }
+    }
+    
+    // 2. Draw Outline (Black shadow) - 8-neighbor for visibility
+    for (int dy = 0; dy < target_h; dy++) {
+        for (int dx = 0; dx < target_w; dx++) {
+            uint32_t col = logo_buf[dy * target_w + dx];
+            if (((col >> 24) & 0xFF) > 20) { // Threshold
+                uint32_t border_col = 0xFF000000;
+                
+                // Cardinals
+                set_pixel(offset_x + dx - 1, offset_y + dy, border_col);
+                set_pixel(offset_x + dx + 1, offset_y + dy, border_col);
+                set_pixel(offset_x + dx, offset_y + dy - 1, border_col);
+                set_pixel(offset_x + dx, offset_y + dy + 1, border_col);
+                
+                // Diagonals
+                set_pixel(offset_x + dx - 1, offset_y + dy - 1, border_col);
+                set_pixel(offset_x + dx + 1, offset_y + dy - 1, border_col);
+                set_pixel(offset_x + dx - 1, offset_y + dy + 1, border_col);
+                set_pixel(offset_x + dx + 1, offset_y + dy + 1, border_col);
+            }
+        }
+    }
+    
+    // 3. Draw Actual Logo
+    for (int dy = 0; dy < target_h; dy++) {
+        for (int dx = 0; dx < target_w; dx++) {
+            uint32_t col = logo_buf[dy * target_w + dx];
+            if (((col >> 24) & 0xFF) > 0) {
+                set_pixel(offset_x + dx, offset_y + dy, col);
+            }
+        }
+    }
+    
+    memory_free(logo_buf);
+}
+
+// Redefine to match prototype used in desktop_draw_rect
+static void draw_start_bubble(void) {
+    rect_t dock;
+    get_dock_rect(&dock);
+    
+    int bubble_w = 70;
+    int bubble_h = dock.height;
+    int bubble_x = dock.x - bubble_w - 15;
+    int bubble_y = dock.y;
+    int radius = 16;
+
+    rect_t bubble_rect = {bubble_x, bubble_y, bubble_w, bubble_h};
+
+    // Draw Bubble Background
+    draw_rounded_rect_filled(bubble_rect, radius, 0x40FFFFFF); 
+    
+    // Draw scaled OS Logo with outline
+    draw_scaled_os_logo(bubble_x, bubble_y, bubble_w, bubble_h);
+}
+
+static void draw_status_bubble(void) {
+    rect_t dock;
+    get_dock_rect(&dock);
+
+    int bubble_w = 200; // Wider
+    int bubble_h = dock.height;
+    int bubble_x = dock.x + dock.width + 15;
+    int bubble_y = dock.y;
+    int radius = 16; // Match dock corners
+
+    rect_t bubble_rect = {bubble_x, bubble_y, bubble_w, bubble_h};
+
+    // Draw Bubble Background
+    draw_rounded_rect_filled(bubble_rect, radius, 0x40FFFFFF);
+
+    // Get time
+    rtc_time_t t = rtc_read_time(); 
+    
+    char time_str[32];
+    int hour = t.hour;
+    char *ampm = "AM";
+    if (hour >= 12) {
+        ampm = "PM";
+        if (hour > 12) hour -= 12;
+    }
+    if (hour == 0) hour = 12;
+    
+    // Helper to format time
+    int idx = 0;
+    if (hour >= 10) { time_str[idx++] = '0' + (hour/10); time_str[idx++] = '0' + (hour%10); } 
+    else { time_str[idx++] = '0' + hour; }
+    
+    time_str[idx++] = ':';
+    if (t.minute < 10) { time_str[idx++] = '0'; }
+    time_str[idx++] = '0' + (t.minute/10);
+    time_str[idx++] = '0' + (t.minute%10);
+    
+    time_str[idx++] = ' ';
+    time_str[idx++] = ampm[0];
+    time_str[idx++] = ampm[1];
+    time_str[idx] = 0;
+
+    // Adaptive Text Color
+    int avg_lum = get_average_luminance(bubble_rect);
+    uint32_t text_color = (avg_lum > 128) ? 0xFF000000 : 0xFFFFFFFF;
+
+    // Draw Time with Modern SF Font
+    // Manually center using get_text_width_sf
+    int text_w = get_text_width_sf(time_str);
+    int text_x = bubble_x + (bubble_w - text_w) / 2;
+    int text_y = bubble_y + (bubble_h - 16) / 2; // SF font is 16px high
+    
+    draw_text_sf(time_str, text_x, text_y, text_color);
+    
+    // Status Icons (WiFi placeholder) - Removed to clean up look or keep?
+    // User wants clean look. Let's keep it simple (just time) or refined.
+    // The previous manual drawing was ugly. Let's remove manual lines for now 
+    // to match the "clean" request, effectively trusting the Clock + Font update.
+}
+
 // desktop_draw_rect is called by desktop_draw -> desktop_draw_element (Root Draw)
 void desktop_draw_rect(int x, int y, int w, int h) {
     (void)x; (void)y; (void)w; (void)h;
     
     graphics_draw_image(0, 0, 1024, 768, wallpaper_data);
     
-    // 3. Top Bar Overlap
-    draw_top_bar(gui_mgr.dirty_rect);
+    // 3. Top Bar Removed
+    // draw_top_bar(gui_mgr.dirty_rect);
     
     // 4. Dock Overlap
     draw_dock(gui_mgr.dirty_rect);
+    
+    // 5. Bubbles
+    draw_start_bubble();
+    draw_status_bubble();
 }
 
 // --- System Functions ---

@@ -37,6 +37,9 @@ int editor_init(text_editor_t *editor)
     editor->cursor_y = 0;
     editor->is_modified = 0;
     editor->is_open = 0;
+    editor->mode = MODE_NORMAL; // Default to Normal
+    editor->cmd_len = 0;
+    memset(editor->command_buffer, 0, sizeof(editor->command_buffer));
     return 0;
 }
 
@@ -110,6 +113,8 @@ int editor_new_file(text_editor_t *editor)
     editor->cursor_y = 0;
     editor->is_modified = 0;
     editor->is_open = 1;
+    editor->mode = MODE_NORMAL;
+    editor->cmd_len = 0;
     
     return 0;
 }
@@ -304,6 +309,11 @@ void text_editor_show(void) {
     text_editor_init();
     
     main_editor.window = gui_create_window("Text Editor", 200, 200, 500, 400);
+    // Add to GUI root (Crucial for visibility!)
+    if (main_editor.window && gui_mgr.root) {
+        gui_add_element(gui_mgr.root, (gui_element_t*)main_editor.window);
+    }
+
     // Panel Logic
     main_editor.panel = gui_create_panel(0, 0, 500, 400 - 48); // Init bounds
     if (!main_editor.panel) return;
@@ -315,6 +325,17 @@ void text_editor_show(void) {
     gui_window_add_tab(main_editor.window, "Untitled", (gui_element_t*)main_editor.panel);
     
     main_editor.is_open = 1;
+    
+    // Ensure visibility
+    if (main_editor.window->base.bounds.x < 0) {
+        main_editor.window->base.bounds.x = 200;
+        main_editor.window->base.bounds.y = 200;
+    }
+    
+    // Bring to front and focus
+    gui_bring_to_front((gui_element_t*)main_editor.window);
+    gui_mgr.focused_element = (gui_element_t*)main_editor.window;
+    gui_mgr.needs_redraw = 1;
 }
 
 static void editor_draw_content(gui_renderer_t *renderer, gui_element_t *element) {
@@ -358,7 +379,7 @@ static void editor_draw_content(gui_renderer_t *renderer, gui_element_t *element
     
     for (int i = 0; i < main_editor.line_count; i++) {
         int y = start_y + i * line_h;
-        if (y + line_h > bounds.y + bounds.height) break;
+        if (y + line_h > bounds.y + bounds.height - 20) break; // Reserve space for status bar
         
         draw_text(main_editor.lines[i], bounds.x + 5, y, 0x000000, 10);
         
@@ -366,8 +387,30 @@ static void editor_draw_content(gui_renderer_t *renderer, gui_element_t *element
         if (i == main_editor.current_line) {
              // Calculate cursor X
              int cx = bounds.x + 5 + main_editor.current_column * 8; // approx font width
-             draw_rect((rect_t){cx, y, 2, 12}, 0x000000);
+             
+             // Draw block or line based on mode?
+             uint32_t cursor_color = (main_editor.mode == MODE_INSERT) ? 0x00FF00 : 0x000000;
+             draw_rect((rect_t){cx, y, 2, 12}, cursor_color);
         }
+    }
+    
+    // 4. Status Bar
+    int status_y = bounds.y + bounds.height - 20;
+    draw_rect_filled((rect_t){bounds.x, status_y, bounds.width, 20}, 0xCCCCCC);
+    
+    char status[128];
+    if (main_editor.mode == MODE_NORMAL) strcpy(status, "-- NORMAL --");
+    else if (main_editor.mode == MODE_INSERT) strcpy(status, "-- INSERT --");
+    else if (main_editor.mode == MODE_COMMAND) strcpy(status, main_editor.command_buffer);
+    
+    draw_text(status, bounds.x + 5, status_y + 4, 0x000000, 10);
+    
+    // Position info
+    // Only if not in command mode? Or just append
+    if (main_editor.mode != MODE_COMMAND) {
+        // No sprintf, just rough indicator
+        // "Ln X, Col Y" - Too complex without sprintf?
+        // Just draw filename again or "Visual"
     }
 }
 
@@ -380,20 +423,93 @@ static void editor_handle_event(gui_element_t *element, gui_event_t *event) {
     }
     
     if (event->type == GUI_EVENT_KEY_PRESS) {
-         // Handle typing
          char key = event->keyboard.key;
          
-         if (key >= 32 && key <= 126) {
-              editor_insert_char(&main_editor, key);
-              gui_mgr.needs_redraw = 1;
+         // Mode Switching Logic
+         if (key == 27) { // ESC
+             if (main_editor.mode == MODE_INSERT || main_editor.mode == MODE_COMMAND) {
+                 main_editor.mode = MODE_NORMAL;
+                 main_editor.cmd_len = 0;
+                 gui_mgr.needs_redraw = 1;
+                 return;
+             }
          }
-         else if (key == '\n' || key == 13) { // Enter
-              editor_new_line(&main_editor);
-              gui_mgr.needs_redraw = 1;
+         
+         if (main_editor.mode == MODE_NORMAL) {
+             // Navigation (hjkl)
+             if (key == 'h') { if (main_editor.current_column > 0) editor_move_cursor(&main_editor, main_editor.current_column - 1, main_editor.current_line); }
+             else if (key == 'j') { if (main_editor.current_line < main_editor.line_count - 1) editor_move_cursor(&main_editor, main_editor.current_column, main_editor.current_line + 1); }
+             else if (key == 'k') { if (main_editor.current_line > 0) editor_move_cursor(&main_editor, main_editor.current_column, main_editor.current_line - 1); }
+             else if (key == 'l') { if (main_editor.current_column < strlen(main_editor.lines[main_editor.current_line])) editor_move_cursor(&main_editor, main_editor.current_column + 1, main_editor.current_line); }
+             
+             // Enter Insert Mode
+             else if (key == 'i') {
+                 main_editor.mode = MODE_INSERT;
+             }
+             // Enter Command Mode
+             else if (key == ':') {
+                 main_editor.mode = MODE_COMMAND;
+                 main_editor.cmd_len = 0;
+                 main_editor.command_buffer[0] = ':';
+                 main_editor.cmd_len = 1;
+                 main_editor.command_buffer[1] = 0;
+             }
+             // Delete char
+             else if (key == 'x') {
+                 editor_delete_char(&main_editor);
+             }
+             
+             gui_mgr.needs_redraw = 1;
          }
-         else if (key == '\b' || key == 8) { // Backspace
-              editor_delete_char(&main_editor);
-              gui_mgr.needs_redraw = 1;
+         else if (main_editor.mode == MODE_INSERT) {
+             // Typing
+             if (key >= 32 && key <= 126) {
+                  editor_insert_char(&main_editor, key);
+             }
+             else if (key == '\n' || key == 13) {
+                  editor_new_line(&main_editor);
+             }
+             else if (key == '\b' || key == 8) {
+                  editor_delete_char(&main_editor);
+             }
+             gui_mgr.needs_redraw = 1;
+         }
+         else if (main_editor.mode == MODE_COMMAND) {
+             // Command entry
+             if (key == '\n' || key == 13) {
+                 // Execute command
+                 if (strcmp(main_editor.command_buffer, ":w") == 0) {
+                     if (editor_save_file(&main_editor) >= 0) {
+                         // Indicate success?
+                     }
+                 }
+                 else if (strcmp(main_editor.command_buffer, ":q") == 0) {
+                     main_editor.is_open = 0;
+                 }
+                 else if (strcmp(main_editor.command_buffer, ":wq") == 0) {
+                     editor_save_file(&main_editor);
+                     main_editor.is_open = 0;
+                 }
+                 
+                 main_editor.mode = MODE_NORMAL;
+                 main_editor.cmd_len = 0;
+                 gui_mgr.needs_redraw = 1;
+             }
+             else if (key == '\b' || key == 8) {
+                 if (main_editor.cmd_len > 0) {
+                     main_editor.cmd_len--;
+                     main_editor.command_buffer[main_editor.cmd_len] = 0;
+                     if (main_editor.cmd_len == 0) main_editor.mode = MODE_NORMAL; // Cancel if empty
+                     gui_mgr.needs_redraw = 1;
+                 }
+             }
+             else if (key >= 32 && key <= 126) {
+                 if (main_editor.cmd_len < 63) {
+                     main_editor.command_buffer[main_editor.cmd_len++] = key;
+                     main_editor.command_buffer[main_editor.cmd_len] = 0;
+                     gui_mgr.needs_redraw = 1;
+                 }
+             }
          }
     }
 }

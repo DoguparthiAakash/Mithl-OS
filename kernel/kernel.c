@@ -168,10 +168,12 @@ void kmain(uint32_t magic, void* addr)
     desktop_init();
 
     // Initial Draw
-    // Initial Draw
     console_log("[INFO] First Desktop Draw...\n");
-    desktop_draw();
-    graphics_swap_buffers(); 
+    desktop_draw(); // Draws to Backbuffer
+    
+    // Fade in from Black to the Desktop we just drew
+    graphics_fade_in();
+    
     console_log("[INFO] Draw Complete. Entering Loop.\n");
     
     static int prev_x = -1, prev_y = -1;

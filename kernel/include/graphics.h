@@ -54,6 +54,7 @@ void set_pixe(int x, int y, uint32_t argb);
 
 void clear_screen(uint32_t argb);
 void graphics_swap_buffers(void);
+void graphics_fade_in(void);
 void graphics_copy_rect(int x, int y, int w, int h);
 void graphics_set_clip(rect_t rect);
 
@@ -76,6 +77,7 @@ void apply_glass_effect(rect_t rect, int radius);
 void draw_text(const char *text, int x, int y, uint32_t color, uint32_t size);
 void draw_text_exp(const char *text, int x, int y, uint32_t color, uint32_t size, int spacing);
 void draw_text_sf(const char *text, int x, int y, uint32_t color);
+void draw_text_sf_mono(const char *text, int x, int y, uint32_t color);
 int get_text_width_sf(const char *text);
 void draw_text_centered(const char *text, rect_t rect, uint32_t color, uint32_t size);
 void graphics_draw_image(int x, int y, int w, int h, const uint32_t* data);

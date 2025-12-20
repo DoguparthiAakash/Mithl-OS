@@ -679,10 +679,7 @@ void draw_text_exp(const char *text, int x, int y, uint32_t color, uint32_t size
     }
 }
 
-void draw_text(const char *text, int x, int y, uint32_t color, uint32_t size)
-{
-    draw_text_exp(text, x, y, color, size, 8); // Default spacing 8
-}
+
 
 // Variable width text drawing for San Francisco
 void draw_text_sf(const char *text, int x, int y, uint32_t color)
@@ -702,11 +699,10 @@ void draw_text_sf(const char *text, int x, int y, uint32_t color)
         // Draw Bitmap (16 rows)
         for (int r = 0; r < SF_HEIGHT; r++) {
             uint16_t row_data = bitmap[r];
-            // MSB is left-most pixel. We have up to 16 pixels.
-            // Width w tells us how many valid pixels.
+            // MSB is left-most pixel. 
             
             for (int col = 0; col < 16; col++) {
-               if (col >= w) break; // Don't draw beyond width
+               if (col >= w) break; 
                
                if (row_data & (1 << (15 - col))) {
                    set_pixel(cursor_x + col, y + r, color);
@@ -717,6 +713,57 @@ void draw_text_sf(const char *text, int x, int y, uint32_t color)
         cursor_x += w + 1; 
     }
 }
+
+// Monospace wrapper for SF font (centers glyphs in fixed width cell)
+void draw_text_sf_mono(const char *text, int x, int y, uint32_t color)
+{
+    if (!text) return;
+    
+    int cell_w = 11; // Fixed cell width
+    int cursor_x = x;
+    
+    for (int i = 0; text[i]; i++) {
+        unsigned char c = (unsigned char)text[i];
+        if (c > 127) c = '?';
+        
+        int w = font_sf_widths[c];
+        const uint16_t *bitmap = font_sf_data[c];
+        
+        // Center in cell
+        int offset_x = (cell_w - w) / 2;
+        if (offset_x < 0) offset_x = 0; // Overlap left/right if too wide
+        
+        // Draw Bitmap
+        for (int r = 0; r < SF_HEIGHT; r++) {
+            uint16_t row_data = bitmap[r];
+            for (int col = 0; col < 16; col++) {
+               if (col >= w) break;
+               
+               if (row_data & (1 << (15 - col))) {
+                   // Clip to cell width if strict, or allow spill
+                   // Allowing spill is better for 'W' reading, but might overlap next char.
+                   // Since Z-order isn't per char, overlap is just addition. Be careful.
+                   set_pixel(cursor_x + offset_x + col, y + r, color);
+               }
+            }
+        }
+        cursor_x += cell_w;
+    }
+}
+
+// Replaces existing draw_text.
+void draw_text(const char *text, int x, int y, uint32_t color, uint32_t size)
+{
+    // Use modern font by default as requested ("clean font for OS as default")
+    (void)size; // Unused
+    draw_text_sf(text, x, y, color);
+}
+
+// Legacy 8x8 for specific needs if any
+void draw_text_8x8(const char *text, int x, int y, uint32_t color, uint32_t size) {
+     draw_text_exp(text, x, y, color, size, 8);
+}
+
 
 int get_text_width_sf(const char *text) {
     if (!text) return 0;
@@ -849,25 +896,101 @@ void draw_icon(int x, int y, const uint32_t* icon_data)
 
 // Note: graphics_draw_image is defined earlier in the file
 
+// Draw boot logo
 void draw_boot_logo(void) {
-    // 1. Clear Screen to Black (Optional if logo covers screen, but good practice)
+    // 1. Clear Screen to Black
     clear_screen(0xFF000000); // Black opaque
     
-    // 2. Draw Full Screen Logo
-    // bootlogo_data is 1024x768 in bootlogo.h
-    graphics_draw_image(0, 0, 1024, 768, bootlogo_data);
+    // 2. Draw Centered Logo
+    // Uses dimensions from new bootlogo.h
+    int logo_x = (fb.width - bootlogo_width) / 2;
+    int logo_y = (fb.height - bootlogo_height) / 2;
     
-    // 3. Draw Loading Bar Overlay (Optional, keep it for feedback)
-    /*
-    int y = (fb.height - 50) / 2;
-    rect_t bar = { (fb.width - 300)/2, y + 200, 300, 4 };
-    draw_rounded_rect_filled(bar, 2, 0x808080);
-    rect_t fill = { bar.x, bar.y, 100, 4 }; 
-    draw_rounded_rect_filled(fill, 2, 0xFFFFFF);
-    */
+    graphics_draw_image(logo_x, logo_y, bootlogo_width, bootlogo_height, bootlogo_data);
     
-    // 3. Present
+    // 3. Draw Loading Bar Overlay (macOS style: thin white/grey bar below logo)
+    int bar_width = 200; 
+    int bar_height = 6;
+    int bar_x = (fb.width - bar_width) / 2;
+    int bar_y = logo_y + bootlogo_height + 40; // Spacing below logo
+    
+    // Bar Background (Dark Grey)
+    rect_t bar_bg = { bar_x, bar_y, bar_width, bar_height };
+    draw_rounded_rect_filled(bar_bg, bar_height/2, 0xFF333333); 
+    
+    // Bar Fill Animation (Simulated)
+    // In a real OS this would be linked to boot progress.
     graphics_swap_buffers();
+    
+    rect_t bar_fill = { bar_x, bar_y, 0, bar_height };
+    for (int i = 0; i <= 100; i++) {
+        // Clear bar area first to prevent overdraw artifacts if alpha used (though here it's opaque on opaque)
+        // draw_rounded_rect_filled(bar_bg, bar_height/2, 0xFF333333); 
+        
+        bar_fill.width = (bar_width * i) / 100;
+        draw_rounded_rect_filled(bar_fill, bar_height/2, 0xFFCCCCCC); // Light grey/white fill
+        
+        graphics_swap_buffers();
+        
+        // Short delay for visibility
+        for(volatile int k=0; k<2000000; k++); 
+    }
+}
+
+// Fade in from black to the current backbuffer content
+void graphics_fade_in(void) {
+    if (!fb.address || !backbuffer) return;
+
+    // 1. Allocate a temp buffer to hold the CLEAN desktop image
+    // We need this because we'll be modifying the backbuffer with a black overlay each frame,
+    // and we need to restore the clean image for the next frame's lighter overlay.
+    // Use 4 bytes per pixel for simplicity (alignment)
+    uint32_t buffer_size = fb.width * fb.height * 4;
+    uint8_t *clean_buffer = (uint8_t*)memory_alloc(buffer_size);
+    
+    if (!clean_buffer) return; // Allocation failed, skip fade
+    
+    // 2. Save current backbuffer (which has the Desktop drawn on it)
+    // Adjust pitch if needed, but we assume compact backbuffer in memory_alloc
+    // uint32_t bytes_per_pixel = fb.bpp / 8;
+    // uint32_t compact_pitch = fb.width * bytes_per_pixel;
+    
+    // We can't just memcpy if pitch differs, but our backbuffer IS compact (see graphics_init)
+    // "backbuffer = (uint8_t*)memory_alloc(buffer_size);" -> It's compact.
+    memcpy(clean_buffer, backbuffer, buffer_size);
+    
+    // 3. Animation Loop
+    // Alpha: 255 (Solid Black) -> 0 (Transparent/Done)
+    // Step size determines speed.
+    int step = 5; 
+    
+    rect_t screen_rect = {0, 0, fb.width, fb.height};
+    
+    for (int alpha = 255; alpha >= 0; alpha -= step) {
+        // A. Restore clean desktop to backbuffer
+        memcpy(backbuffer, clean_buffer, buffer_size);
+        
+        // B. Draw black overlay with current alpha
+        // We use a helper or manual fill for speed
+        if (alpha > 0) {
+            uint32_t black_overlay = (alpha << 24) | 0x000000;
+            draw_rect_filled(screen_rect, black_overlay);
+        }
+        
+        // C. Present to Screen
+        graphics_swap_buffers();
+        
+        // D. Delay
+        // Adjust this loop for timing
+        for(volatile int k=0; k<100000; k++);
+    }
+    
+    // 4. Cleanup
+    // restore purely clean one last time just in case
+    memcpy(backbuffer, clean_buffer, buffer_size);
+    graphics_swap_buffers();
+    
+    memory_free(clean_buffer);
 }
 
 

@@ -198,6 +198,20 @@ void cmd_cat(terminal_t *term, const char *args) {
 
 /* System Commands */
 
+void cmd_exit(terminal_t *term, const char *args) {
+    (void)args;
+    if (term && term->window) {
+        // Move window off-screen to "close" it, similar to close button logic
+        term->window->base.bounds.x = -1000;
+        
+        // Mark as needs redraw
+        gui_mgr.needs_redraw = 1;
+        
+        // Ideally we should free resources, but for now hiding is sufficient
+        // as the OS doesn't have a full process model for apps yet.
+    }
+}
+
 void cmd_shutdown(terminal_t *term, const char *args) {
     (void)args;
     terminal_print(term, "Shutting down system...\n");
@@ -466,6 +480,24 @@ void cmd_edit(terminal_t *term, const char *args) {
     
     write_fs(node, 0, strlen(data), (uint8_t*)data);
     terminal_print(term, "File updated.\n");
+    write_fs(node, 0, strlen(data), (uint8_t*)data);
+    terminal_print(term, "File updated.\n");
+}
+
+void cmd_vim(terminal_t *term, const char *args) {
+    if (args[0] == 0) {
+        terminal_print(term, "Usage: vim <filename>\n");
+        return;
+    }
+    
+    char path[256];
+    resolve_absolute_path(args, path);
+    // TODO: Verify if directory?
+    
+    extern void text_editor_open(const char* filename);
+    text_editor_open(path);
+    
+    terminal_print(term, "Opened editor.\n");
 }
 
     // Re-injecting missing functions
@@ -512,6 +544,7 @@ void cmd_mv(terminal_t *term, const char *args) {
 
 static const command_t commands[] = {
     /* System Commands */
+    {"exit", cmd_exit, "Close terminal"},
     {"shutdown", cmd_shutdown, "Shutdown the system"},
     {"restart", cmd_restart, "Restart the system"},
     {"reboot", cmd_restart, "Reboot the system"},
@@ -526,6 +559,8 @@ static const command_t commands[] = {
     /* Text Utilities */
     {"echo", cmd_echo, "Display a line of text"},
     {"edit", cmd_edit, "Write text to file"},
+    {"vim", cmd_vim, "Vim-like text editor"},
+    {"vi", cmd_vim, "Vim-like text editor"},
     
     /* Filesystem Commands */
     {"mkdir", cmd_mkdir, "Create directory"},

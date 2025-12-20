@@ -100,7 +100,12 @@ void wm_manage_window(gui_window_t *window) {
     }
     
     // 3. Trigger Layout Update
-    wm_render_tree(wm_root, wm_root->base.bounds);
+    // Exclude "Start" menu from layout recalculations (Floating Popup)
+    if (window->title && strcmp(window->title, "Start") == 0) {
+        // Do not trigger tree render for popup
+    } else {
+        wm_render_tree(wm_root, wm_root->base.bounds);
+    }
     
     console_log("[WM] Managed Window: ");
     if (window->title) console_log(window->title);

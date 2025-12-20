@@ -10,6 +10,12 @@
 #define EDITOR_MAX_FILENAME 64
 #define MAX_EDITOR_BUFFER 8192
 
+typedef enum {
+    MODE_NORMAL,
+    MODE_INSERT,
+    MODE_COMMAND
+} EditorMode;
+
 typedef struct {
     gui_window_t *window;
     gui_panel_t *panel; // Content panel
@@ -22,6 +28,11 @@ typedef struct {
     char filename[EDITOR_MAX_FILENAME];
     int is_modified;
     int is_open;
+    
+    // Vim-like additions
+    EditorMode mode;
+    char command_buffer[64];
+    int cmd_len;
 } text_editor_t;
 
 void text_editor_init(void);
