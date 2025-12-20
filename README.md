@@ -1,9 +1,14 @@
+<p align="center">
+  <img src="OSLogo.png" ... >
+</p>
+
+
 # Mithl OS 🚀
 > *A next-generation, independent operating system written in C and Assembly (with a sprinkle of Rust).*
 
 Welcome to **Mithl OS**! This is a passion project built entirely from the ground up, designed to push the boundaries of what a custom operating system can be. It is not based on Linux, Unix, or any existing kernel—every line of code, from the bootloader to the graphical interface, has been crafted from scratch to deliver a unique and powerful computing experience.
 
-![Mithl OS Logo](OSLogo.png)
+
 
 ---
 
