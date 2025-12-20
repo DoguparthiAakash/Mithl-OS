@@ -22,6 +22,7 @@ typedef struct dirent * (*readdir_type_t)(struct fs_node*, uint32_t);
 typedef struct fs_node * (*finddir_type_t)(struct fs_node*, char *name);
 typedef void (*create_type_t)(struct fs_node*, char *name, uint16_t permission);
 typedef void (*mkdir_type_t)(struct fs_node*, char *name, uint16_t permission);
+typedef void (*unlink_type_t)(struct fs_node*, char *name);
 
 typedef struct fs_node {
     char name[128];
@@ -41,6 +42,7 @@ typedef struct fs_node {
     finddir_type_t finddir;
     create_type_t create;
     mkdir_type_t mkdir;
+    unlink_type_t unlink;
     
     struct fs_node *ptr; // Used by mountpoints and symlinks
 } fs_node_t;
@@ -63,6 +65,7 @@ struct dirent *readdir_fs(fs_node_t *node, uint32_t index);
 fs_node_t *finddir_fs(fs_node_t *node, char *name);
 void create_fs(fs_node_t *parent, char *name, uint16_t permission);
 void mkdir_fs(fs_node_t *parent, char *name, uint16_t permission);
+void unlink_fs(fs_node_t *parent, char *name);
 void create_fs(fs_node_t *parent, char *name, uint16_t permission);
 void mkdir_fs(fs_node_t *parent, char *name, uint16_t permission);
 

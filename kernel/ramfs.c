@@ -86,17 +86,80 @@ fs_node_t *ramfs_finddir(fs_node_t *node, char *name) {
 
 // -- Creation --
 
+// NEW: Write support
+uint32_t ramfs_write(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
+    if ((node->flags & FS_FILE) != FS_FILE) return 0;
+    
+    // Check if we need to expand
+    uint32_t new_end = offset + size;
+    if (new_end > node->length) {
+        // Simple realloc: Alloc new, Copy old, Free old
+        // Note: memory_realloc would be nice
+        char *new_buf = (char*)memory_alloc(new_end + 1);
+        char *old_buf = (char*)node->impl;
+        
+        if (old_buf) {
+            if (node->length > 0) memcpy(new_buf, old_buf, node->length);
+            memory_free(old_buf);
+        }
+        node->impl = (uint32_t)new_buf;
+        node->length = new_end;
+    }
+    
+    char *data = (char*)node->impl;
+    memcpy(data + offset, buffer, size);
+    data[node->length] = 0; // Null terminate for safety (text files)
+    
+    return size;
+}
+
+// NEW: Unlink (Delete)
+void ramfs_vfs_unlink(fs_node_t *parent, char *name) {
+    if ((parent->flags & FS_DIRECTORY) != FS_DIRECTORY) return;
+    
+    list_t *children = (list_t*)parent->ptr;
+    if (!children) return;
+    
+    // Find child node
+    list_node_t *item = children->head;
+    int index = 0;
+    while (item) {
+        fs_node_t *child = (fs_node_t*)item->data;
+        if (strcmp(child->name, name) == 0) {
+            // Found it. Remove from list.
+            list_remove_node(children, item);
+            
+            // Clean up child resources (simple version)
+            // If file, free buffer
+            if ((child->flags & FS_FILE) == FS_FILE) {
+                if (child->impl) memory_free((void*)child->impl);
+            }
+            // If dir, we should recursively delete? For now, we allow leaking or assume empty.
+            // In a real OS, we'd fail if Dir not empty. 
+            // We'll just free the node struct.
+            
+            memory_free(child);
+            return;
+        }
+        item = item->next;
+        index++;
+    }
+}
+
+// -- Creation --
+
 fs_node_t *allocate_node(const char *name, uint32_t flags) {
     fs_node_t *node = (fs_node_t*)memory_alloc(sizeof(fs_node_t));
     memset(node, 0, sizeof(fs_node_t));
     strcpy(node->name, name);
     node->flags = flags;
     node->read = ramfs_read;
-    node->write = 0; // Read-only for now
+    node->write = ramfs_write; // Bind write
     node->readdir = ramfs_readdir;
     node->finddir = ramfs_finddir;
     node->create = 0; // Set later if directory
     node->mkdir = 0;  // Set later if directory
+    node->unlink = 0; // Set later
     return node;
 }
 
@@ -119,6 +182,7 @@ fs_node_t *ramfs_create_dir(const char *name) {
     node->ptr = (struct fs_node*)list_create();
     node->create = ramfs_vfs_create;
     node->mkdir = ramfs_vfs_mkdir;
+    node->unlink = ramfs_vfs_unlink; // Bind unlink
     return node;
 }
 

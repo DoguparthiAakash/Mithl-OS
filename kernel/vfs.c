@@ -50,6 +50,11 @@ void mkdir_fs(fs_node_t *parent, char *name, uint16_t permission) {
         parent->mkdir(parent, name, permission);
 }
 
+void unlink_fs(fs_node_t *parent, char *name) {
+    if (parent->unlink != 0)
+        parent->unlink(parent, name);
+}
+
 fs_node_t *finddir_fs(fs_node_t *node, char *name)
 {
     if ((node->flags & 0x7) == FS_DIRECTORY && node->finddir != 0)

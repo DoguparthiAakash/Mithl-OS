@@ -141,14 +141,32 @@ void terminal_print(terminal_t *term, const char *str) {
 // Rust FFI
 extern size_t rust_handle_command(const char *input, size_t len, char *output, size_t max_out);
 
-// Prompt Constant
-static const char *PROMPT = "aakash@mithl:~$ ";
+// Prompt Logic
+extern const char* get_current_dir(void);
+
+static void terminal_print_prompt(terminal_t *term) {
+    terminal_print(term, "aakash@mithl:");
+    
+    const char *cwd = get_current_dir();
+    
+    // Check if starts with /home/aakash
+    if (memcmp(cwd, "/home/aakash", 12) == 0) {
+        terminal_print(term, "~");
+        terminal_print(term, cwd + 12);
+    } else {
+        terminal_print(term, cwd);
+    }
+    
+    terminal_print(term, "$ ");
+}
+
+// static const char *PROMPT = "aakash@mithl:~$ "; // REMOVED
 
 void terminal_run_command(terminal_t *term, const char *command) {
     terminal_print(term, "\n");
     
     if (strlen(command) == 0) {
-        terminal_print(term, PROMPT);
+        terminal_print_prompt(term);
         return;
     }
 
@@ -157,7 +175,7 @@ void terminal_run_command(terminal_t *term, const char *command) {
         memset(term->buffer, 0, sizeof(term->buffer));
         term->cursor_x = 0;
         term->cursor_y = 0;
-        terminal_print(term, PROMPT);
+        terminal_print_prompt(term);
         return;
     }
     
@@ -187,7 +205,7 @@ void terminal_run_command(terminal_t *term, const char *command) {
     }
     
     if (found) {
-        terminal_print(term, PROMPT);
+        terminal_print_prompt(term);
         return;
     }
     
@@ -284,7 +302,7 @@ void terminal_run_command(terminal_t *term, const char *command) {
         }
     }
     
-    terminal_print(term, PROMPT);
+    terminal_print_prompt(term);
 }
 
 void terminal_run_command_active(const char *command) {
