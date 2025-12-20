@@ -94,19 +94,36 @@ static rsdp_t *find_rsdp(void) {
     return NULL;
 }
 
+// -- Helper: Hex String --
+void acpi_print_hex(const char* prefix, uint32_t val) {
+    char buf[32];
+    int idx = 0;
+    while(prefix[idx]) { buf[idx] = prefix[idx]; idx++; }
+    
+    buf[idx++] = '0'; buf[idx++] = 'x';
+    
+    for (int i = 28; i >= 0; i -= 4) {
+        uint8_t nibble = (val >> i) & 0xF;
+        buf[idx++] = (nibble < 10) ? ('0' + nibble) : ('A' + nibble - 10);
+    }
+    buf[idx++] = '\n';
+    buf[idx] = 0;
+    serial_write(buf);
+}
+
 // -- Init --
 void acpi_init(void) {
+    serial_write("[ACPI] Finding RSDP...\n");
     rsdp_t *rsdp = find_rsdp();
     if (!rsdp) {
-        // serial_write("[ACPI] RSDP not found.\n");
+        serial_write("[ACPI] RSDP not found.\n");
         return;
     }
     
     // Validate RSDT
     sdt_header_t *rsdt = (sdt_header_t *)rsdp->rsdt_address;
     if (!check_sum((uint8_t*)rsdt, rsdt->length)) {
-        // serial_write("[ACPI] RSDT checksum failed.\n");
-        return;
+        serial_write("[ACPI] RSDT checksum failed. (Continuing anyway)\n");
     }
     
     // Find FACP (FADT)
@@ -115,16 +132,22 @@ void acpi_init(void) {
     
     fadt_t *fadt = NULL;
     
+    serial_write("[ACPI] Scanning Tables:\n");
     for (int i = 0; i < entries; i++) {
         sdt_header_t *h = (sdt_header_t *)pointers[i];
+        char sig[5];
+        memcpy(sig, h->signature, 4); sig[4] = 0;
+        serial_write(sig); serial_write(" ");
+        
         if (strncmp(h->signature, "FACP", 4) == 0) {
             fadt = (fadt_t *)h;
             break;
         }
     }
+    serial_write("\n");
     
     if (!fadt) {
-        // serial_write("[ACPI] FADT not found.\n");
+        serial_write("[ACPI] FADT not found.\n");
         return;
     }
     
@@ -132,44 +155,48 @@ void acpi_init(void) {
     pm1a_cnt_blk = fadt->pm1a_cnt_blk;
     pm1b_cnt_blk = fadt->pm1b_cnt_blk;
     
+    acpi_print_hex("[ACPI] PM1a_CNT_BLK: ", pm1a_cnt_blk);
+    acpi_print_hex("[ACPI] PM1b_CNT_BLK: ", pm1b_cnt_blk);
+    
     // Enable ACPI if needed
-    // (If SMI_CMD is non-zero and ACPI_ENABLE is non-zero, we might need to enable it)
     if (fadt->smi_cmd && fadt->acpi_enable) {
+        serial_write("[ACPI] Enabling ACPI Mode...\n");
         outb(fadt->smi_cmd, fadt->acpi_enable);
-        // Wait?
-        for(volatile int w=0; w<10000; w++);
+        
+        // Wait for potential transition
+        for(volatile int w=0; w<100000; w++);
+    } else {
+        serial_write("[ACPI] ACPI already enabled or not required.\n");
     }
     
     acpi_enabled = 1;
-    // serial_write("[ACPI] Initialized. PM1a_CNT = %x\n", pm1a_cnt_blk);
 }
 
 // -- Shutdown --
 void acpi_shutdown(void) {
-    if (!acpi_enabled) acpi_init();
-    if (!acpi_enabled || pm1a_cnt_blk == 0) return;
+    serial_write("[ACPI] Requesting Shutdown...\n");
     
-    // "Shotgun" approach for SLP_TYP since we didn't parse DSDT _S5
-    // Format: SLP_EN (bit 13) | SLP_TYP (bits 10-12)
-    // S5 is usually type 5 (101b) or type 0 (000b) or type 7 (111b)
+    if (!acpi_enabled) acpi_init();
+    if (!acpi_enabled || pm1a_cnt_blk == 0) {
+        serial_write("[ACPI] Error: ACPI not initialized or PM1a missing.\n");
+        return;
+    }
     
     uint16_t slp_en = 1 << 13;
     
-    // Try Typ 5 (Most common for S5)
-    outw(pm1a_cnt_blk, slp_en | (5 << 10));
-    if (pm1b_cnt_blk) outw(pm1b_cnt_blk, slp_en | (5 << 10));
+    // VirtualBox Soft Off: SLP_TYP = 5
+    uint16_t cmd = slp_en | (5 << 10); // 0x3400
     
+    acpi_print_hex("[ACPI] Writing Opcode to PM1a: ", cmd);
+    
+    // Try both 16-bit and 32-bit writes just in case
+    outw(pm1a_cnt_blk, cmd);
+    if (pm1b_cnt_blk) outw(pm1b_cnt_blk, cmd);
+    
+    // Small delay
     for(volatile int w=0; w<100000; w++);
     
-    // Try Typ 0
-    outw(pm1a_cnt_blk, slp_en | (0 << 10));
+    // Try SLP_TYP = 0 (Older VBox / QEMU)
+    outw(pm1a_cnt_blk, slp_en | (0 << 10)); 
     if (pm1b_cnt_blk) outw(pm1b_cnt_blk, slp_en | (0 << 10));
-    
-    for(volatile int w=0; w<100000; w++);
-
-    // Try Typ 7
-    outw(pm1a_cnt_blk, slp_en | (7 << 10));
-    
-    // Direct attempt common on QEMU/VBox for UEFI:
-    // Some implementations map IO ports straight.
 }

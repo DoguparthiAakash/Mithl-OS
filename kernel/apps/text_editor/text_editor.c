@@ -202,6 +202,176 @@ int editor_new_line(text_editor_t *editor)
     editor->current_line++;
     editor->current_column = 0;
     editor->cursor_x = 0;
+    
+    return 0;
+}
+/* Move cursor */
+int editor_move_cursor(text_editor_t *editor, int dx, int dy) {
+    if (!editor->is_open) return -1;
+    
+    // Y Movement
+    editor->current_line += dy;
+    if (editor->current_line < 0) editor->current_line = 0;
+    if (editor->current_line >= editor->line_count) editor->current_line = editor->line_count - 1;
+    
+    // X Movement
+    editor->current_column += dx;
+    if (editor->current_column < 0) {
+        if (editor->current_line > 0) {
+            // Wrap up to end of previous line
+            editor->current_line--;
+            editor->current_column = strlen(editor->lines[editor->current_line]);
+        } else {
+            editor->current_column = 0;
+        }
+    }
+    
+    int len = strlen(editor->lines[editor->current_line]);
+    if (editor->current_column > len) {
+        if (dx > 0 && editor->current_line < editor->line_count - 1) {
+            // Wrap down to start of next line
+            editor->current_line++;
+            editor->current_column = 0;
+        } else {
+            editor->current_column = len; // Clamp
+        }
+    }
+    
+    // Update Draw Cursor logic (simplified)
+    // Scroll view if needed (TODO)
+    
+    return 0;
+}
+
+/* GUI Implementation */
+
+static void draw_editor_toolbar(gui_window_t *win) {
+    int start_y = win->base.bounds.y + 24;
+    int w = win->base.bounds.width;
+    
+    // Background
+    draw_rect((rect_t){win->base.bounds.x, start_y, w, 30}, 0xFFF0F0F0);
+    draw_rect_outline(win->base.bounds.x, start_y + 29, w, 1, 0xFFCCCCCC);
+    
+    // Menu Items
+    draw_text_sf_mono("File", win->base.bounds.x + 10, start_y + 8, 0xFF000000);
+    draw_text_sf_mono("Edit", win->base.bounds.x + 50, start_y + 8, 0xFF000000);
+    draw_text_sf_mono("View", win->base.bounds.x + 90, start_y + 8, 0xFF000000);
+    
+    // Gear Icon
+    draw_text_sf_mono("*", win->base.bounds.x + w - 24, start_y + 8, 0xFF555555);
+}
+
+static void draw_editor_status_bar(gui_window_t *win, text_editor_t *editor) {
+    int h = win->base.bounds.height;
+    int y = win->base.bounds.y + h - 20;
+    int w = win->base.bounds.width;
+    
+    draw_rect((rect_t){win->base.bounds.x, y, w, 20}, 0xFF0078D4); // Blue status
+    
+    // Info
+    // Warning: sprintf missing, handle manually or mockup
+    draw_text_sf_mono("UTF-8", win->base.bounds.x + w - 50, y + 4, 0xFFFFFFFF);
+    draw_text_sf_mono("Ln 1, Col 1", win->base.bounds.x + 10, y + 4, 0xFFFFFFFF);
+}
+
+void editor_draw_content(gui_element_t *element) {
+    gui_window_t *win = (gui_window_t*)element;
+    text_editor_t *editor = &main_editor; // Assuming singleton
+    
+    // Toolbar
+    draw_editor_toolbar(win);
+    
+    // Content Area
+    int start_y = win->base.bounds.y + 24 + 30; // Title + Toolbar
+    int start_x = win->base.bounds.x + 2;
+    int content_h = win->base.bounds.height - 24 - 30 - 20; // -Title -Toolbar -Status
+    
+    draw_rect((rect_t){win->base.bounds.x, start_y, win->base.bounds.width, content_h}, 0xFFFFFFFF); // Paper White
+    
+    // Draw Lines
+    int line_h = 16;
+    for (int i = 0; i < editor->line_count; i++) {
+        int y = start_y + i * line_h;
+        if (y > start_y + content_h) break;
+        
+        draw_text_sf_mono(editor->lines[i], start_x + 30, y, 0xFF000000); // +30 for Gutter
+        
+        // Draw Line Number in Gutter (Gray)
+        // Mockup "1"
+        if (i==0) draw_text_sf_mono("1", start_x + 5, y, 0xFFCCCCCC);
+    }
+    
+    // Draw Cursor
+    int cx = start_x + 30 + (editor->current_column * 8); // Assume 8px width mono
+    int cy = start_y + (editor->current_line * line_h);
+    draw_rect((rect_t){cx, cy, 2, line_h}, 0xFF000000); // Black cursor
+    
+    // Status Bar
+    draw_editor_status_bar(win, editor);
+}
+
+void editor_handle_event(gui_element_t *element, gui_event_t *event) {
+    text_editor_t *editor = &main_editor;
+    
+    if (event->type == GUI_EVENT_KEY_PRESS) {
+        uint8_t key = (uint8_t)event->keyboard.key;
+        char c = (char)key; // Basic mapping
+        
+        // Handle Control Keys
+        if (key == 0x08) { // Backspace
+            editor_delete_char(editor);
+        }
+        else if (key == 0x0A) { // Enter
+            editor_new_line(editor);
+        }
+        else if (key == 0x4B) { // Left arrow (scan code dependent, simplified)
+             editor_move_cursor(editor, -1, 0);
+        }
+        else if (key == 0x4D) { // Right arrow
+             editor_move_cursor(editor, 1, 0);
+        }
+        else if (key == 0x48) { // Up arrow
+             editor_move_cursor(editor, 0, -1);
+        }
+        else if (key == 0x50) { // Down arrow
+             editor_move_cursor(editor, 0, 1);
+        }
+        // Save (Ctrl+S assumption or shortcut)
+        // ...
+        
+        // Printable Chars
+        else if (c >= 32 && c <= 126) {
+             editor_insert_char(editor, c);
+        }
+        
+        gui_mgr.needs_redraw = 1;
+    }
+}
+
+void text_editor_show(void) {
+    if (!main_editor.window) {
+        // Init editor first
+        text_editor_init();
+        
+        // Create Window
+        gui_window_t *win = gui_create_window("Notepad", 150, 150, 600, 400);
+        win->base.draw = editor_draw_content;
+        win->base.event_handler = editor_handle_event;
+        
+        main_editor.window = win;
+        editor_new_file(&main_editor);
+        
+        gui_add_element(gui_mgr.root, (gui_element_t*)win);
+    }
+    
+    gui_bring_to_front((gui_element_t*)main_editor.window);
+    main_editor.window->base.flags &= ~GUI_FLAG_HIDDEN;
+    gui_mgr.needs_redraw = 1;
+}    editor->line_count++;
+    editor->current_line++;
+    editor->current_column = 0;
+    editor->cursor_x = 0;
     editor->cursor_y++;
     editor->is_modified = 1;
     
