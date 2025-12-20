@@ -302,7 +302,13 @@ static void editor_handle_event(gui_element_t *element, gui_event_t *event);
 void text_editor_show(void) {
     if (main_editor.window) {
         // Just focus
+        if (main_editor.window->base.bounds.x < 0) {
+             main_editor.window->base.bounds.x = 200;
+             main_editor.window->base.bounds.y = 200;
+        }
+        gui_bring_to_front((gui_element_t*)main_editor.window);
         gui_mgr.focused_element = (gui_element_t*)main_editor.window;
+        gui_mgr.needs_redraw = 1;
         return;
     }
     
@@ -339,82 +345,93 @@ void text_editor_show(void) {
 }
 
 static void editor_draw_content(gui_renderer_t *renderer, gui_element_t *element) {
-    // 1. Standard Frame
+    (void)renderer;
+    
+    // 0. Sync Position with Window
+    if (main_editor.window) {
+        if (main_editor.window->base.bounds.x < -500) return;
+        
+        rect_t *w_r = &main_editor.window->base.bounds;
+        int title_h = 30;
+        element->bounds.x = w_r->x;
+        element->bounds.y = w_r->y + title_h;
+        element->bounds.width = w_r->width;
+        element->bounds.height = w_r->height - title_h;
+    }
+
+    rect_t b = element->bounds;
+    
+    // Windows 11 Notepad Style:
+    // [Tab Bar Area (handled by window tabs usually, but we can enhance)]
+    // [Menu Bar + Gear]
+    // [Text Area]
+    // [Status Bar]
+
     // 1. Background
-    draw_rect_filled(element->bounds, 0xFFFFFF);
+    draw_rect_filled(b, 0xFFFFFFFF);
     
-    rect_t bounds = element->bounds;
+    // --- Menu Bar / Toolbar ---
+    int tool_h = 32;
+    rect_t toolbar = {b.x, b.y, b.width, tool_h};
+    draw_rect_filled(toolbar, 0xFFF9F9F9);
+    draw_line(b.x, b.y + tool_h, b.x + b.width, b.y + tool_h, 0xFFE5E5E5);
     
-    // Update window title dynamically if needed (gui_draw_window uses element->text)
-    // We update it here or in event loop.
-    char title[100];
-    if (main_editor.filename[0]) {
-         strcpy(title, "Text Editor - ");
-         strcat(title, main_editor.filename);
-    } else {
-         strcpy(title, "Text Editor - Untitled");
-    }
-    // Note: element->text points to a buffer? or allocated?
-    // In gui.c gui_create_window allocated it.
-    // If we change it, we should re-allocate or assume bounds. 
-    // For safety, let's just draw subtitle for now as gui_draw_window draws element->text (static).
-    // Or assume element->text is large enough?
-    // Let's just draw the standard title (Text Editor) in gui_draw_window, 
-    // and draw the filename in the sub-header.
+    // Menu Items
+    int mx = b.x + 10;
+    int my = b.y + 10;
+    draw_text("File", mx, my, 0xFF404040, 0); mx += 40;
+    draw_text("Edit", mx, my, 0xFF404040, 0); mx += 40;
+    draw_text("View", mx, my, 0xFF404040, 0); mx += 40;
     
-    // Adjust for panel
+    // Gear Icon (Right aligned)
+    int gear_x = b.x + b.width - 30;
+    draw_circle_filled(gear_x, my + 4, 3, 0xFF606060); // Hub
+    // Teeth (simplified)
+    draw_circle(gear_x, my + 4, 7, 0xFF606060);
+
+    // --- Status Bar (Bottom) ---
+    int status_h = 24;
+    int status_y = b.y + b.height - status_h;
     
-    // Check main_editor.is_open
-    if (!main_editor.is_open) return;
+    draw_rect_filled((rect_t){b.x, status_y, b.width, status_h}, 0xFFF9F9F9);
+    draw_line(b.x, status_y, b.x + b.width, status_y, 0xFFE5E5E5);
     
-    int start_y = bounds.y + 5;
+    // Status Text
+    draw_text("Ln", b.x + 10, status_y + 6, 0xFF606060, 0);
+    draw_text("1, Col 1", b.x + 30, status_y + 6, 0xFF606060, 0); // Placeholder
     
-    // Draw Sub-header (Filename)
-    draw_rect_filled((rect_t){bounds.x + 2, start_y, bounds.width - 4, 16}, 0xEEEEEE);
-    draw_text(title, bounds.x + 5, start_y + 4, 0x000000, 10);
+    draw_text("UTF-8", b.x + b.width - 60, status_y + 6, 0xFF606060, 0);
+
+    // --- Text Area ---
+    int text_y_start = b.y + tool_h;
+    int text_h = b.height - tool_h - status_h;
     
-    // 3. Text Area
-    start_y += 20;
-    int line_h = 14;
+    // Render lines
+    int line_h = 16;
+    int start_line = 0; // Scroll support later
+    int visible_lines = text_h / line_h;
     
-    for (int i = 0; i < main_editor.line_count; i++) {
-        int y = start_y + i * line_h;
-        if (y + line_h > bounds.y + bounds.height - 20) break; // Reserve space for status bar
+    for (int i = 0; i < visible_lines && (start_line + i) < main_editor.line_count; i++) {
+        int ly = text_y_start + i * line_h + 2;
+        char *line = main_editor.lines[start_line + i];
         
-        draw_text(main_editor.lines[i], bounds.x + 5, y, 0x000000, 10);
-        
-        // Cursor
-        if (i == main_editor.current_line) {
-             // Calculate cursor X
-             int cx = bounds.x + 5 + main_editor.current_column * 8; // approx font width
-             
-             // Draw block or line based on mode?
-             uint32_t cursor_color = (main_editor.mode == MODE_INSERT) ? 0x00FF00 : 0x000000;
-             draw_rect((rect_t){cx, y, 2, 12}, cursor_color);
+        // Draw mono text (CORRECTED: 4 args)
+        if (line[0] != '\0') {
+             draw_text_sf_mono(line, b.x + 5, ly, 0xFF000000);
         }
-    }
-    
-    // 4. Status Bar
-    int status_y = bounds.y + bounds.height - 20;
-    draw_rect_filled((rect_t){bounds.x, status_y, bounds.width, 20}, 0xCCCCCC);
-    
-    char status[128];
-    if (main_editor.mode == MODE_NORMAL) strcpy(status, "-- NORMAL --");
-    else if (main_editor.mode == MODE_INSERT) strcpy(status, "-- INSERT --");
-    else if (main_editor.mode == MODE_COMMAND) strcpy(status, main_editor.command_buffer);
-    
-    draw_text(status, bounds.x + 5, status_y + 4, 0x000000, 10);
-    
-    // Position info
-    // Only if not in command mode? Or just append
-    if (main_editor.mode != MODE_COMMAND) {
-        // No sprintf, just rough indicator
-        // "Ln X, Col Y" - Too complex without sprintf?
-        // Just draw filename again or "Visual"
+        
+        // Draw Cursor
+        if (start_line + i == main_editor.current_line) {
+             if (main_editor.is_open) { 
+                 int cursor_px = b.x + 5 + (main_editor.cursor_x * 9); 
+                 draw_rect_filled((rect_t){cursor_px, ly, 2, 14}, 0x000000);
+             }
+        }
     }
 }
 
 static void editor_handle_event(gui_element_t *element, gui_event_t *event) {
+    (void)element;
     // gui_window_event_handler(element, event); // REMOVED
     
     if (main_editor.window && main_editor.window->base.bounds.x == -9999) {
@@ -440,7 +457,7 @@ static void editor_handle_event(gui_element_t *element, gui_event_t *event) {
              if (key == 'h') { if (main_editor.current_column > 0) editor_move_cursor(&main_editor, main_editor.current_column - 1, main_editor.current_line); }
              else if (key == 'j') { if (main_editor.current_line < main_editor.line_count - 1) editor_move_cursor(&main_editor, main_editor.current_column, main_editor.current_line + 1); }
              else if (key == 'k') { if (main_editor.current_line > 0) editor_move_cursor(&main_editor, main_editor.current_column, main_editor.current_line - 1); }
-             else if (key == 'l') { if (main_editor.current_column < strlen(main_editor.lines[main_editor.current_line])) editor_move_cursor(&main_editor, main_editor.current_column + 1, main_editor.current_line); }
+             else if (key == 'l') { if (main_editor.current_column < (int)strlen(main_editor.lines[main_editor.current_line])) editor_move_cursor(&main_editor, main_editor.current_column + 1, main_editor.current_line); }
              
              // Enter Insert Mode
              else if (key == 'i') {

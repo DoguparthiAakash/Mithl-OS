@@ -7,6 +7,8 @@
 #include "graphics.h"
 #include "vfs.h"
 
+#include <theme.h>
+
 extern const uint8_t scancode_to_ascii[128]; // From keyboard.c
 
 static void terminal_draw_content(gui_renderer_t *renderer, gui_element_t *element);
@@ -37,12 +39,13 @@ terminal_t *terminal_create(void)
     // Set up terminal state
     term->cursor_x = 0;
     term->cursor_y = 0;
-    term->bg_color = 0xAA1E1E1E; // Dark Grey with some transparency (AA alpha) - assuming renderer supports it
-    // Actually renderer often ignores alpha for BG clear? 
-    // draw_rect_filled handles alpha.
-    term->panel->base.background_color = 0xFF1E1E1E; // Dark Grey Opaque for panel base
-    term->bg_color = 0xFF1E1E1E;
-    term->fg_color = 0xFFFFFFFF; // White
+    
+    // Use Theme Colors
+    theme_t *theme = theme_get_current();
+    term->panel->base.background_color = theme->terminal_bg;
+    term->bg_color = theme->terminal_bg;
+    term->fg_color = theme->terminal_fg;
+
     term->input_len = 0;
     memset(term->buffer, 0, sizeof(term->buffer));
     memset(term->input_buffer, 0, sizeof(term->input_buffer));
@@ -88,8 +91,8 @@ void terminal_show(void) {
     
     // Check again
     if (active_term && active_term->window) {
-         // Reset position if it was hidden/closed
-         if (active_term->window->base.bounds.x == -9999) {
+         // Reset position if it was hidden/closed (x < 0)
+         if (active_term->window->base.bounds.x < 0) {
              gui_set_position((gui_element_t*)active_term->window, 100, 100);
          }
          
@@ -320,6 +323,23 @@ void terminal_run_command_active(const char *command) {
 static void terminal_draw_content(gui_renderer_t *renderer, gui_element_t *element) {
     (void)renderer; // We use direct graphics calls for custom font control
     
+    // 0. VISIBILITY CHECK
+    // If the main window is hidden (x = -1000), DO NOT DRAW the panel.
+    // This fixes the "Ghosting" issue where the panel stays on screen after closing.
+    if (active_term && active_term->window) {
+        if (active_term->window->base.bounds.x < -500) return;
+        
+        // Also, sync panel bounds with window for dragging
+        // The panel should be at window.x, window.y + title_h
+        // This fixes "Terminal acts as separate window" (Detached content)
+        int title_h = 30;
+        rect_t *w_r = &active_term->window->base.bounds;
+        element->bounds.x = w_r->x;
+        element->bounds.y = w_r->y + title_h;
+        element->bounds.width = w_r->width;
+        element->bounds.height = w_r->height - title_h;
+    }
+
     // 1. Draw Background
     draw_rect_filled(element->bounds, active_term->bg_color);
     

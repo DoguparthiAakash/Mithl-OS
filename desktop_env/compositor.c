@@ -16,6 +16,7 @@
 #include <console.h>
 #include <bootlogo.h>
 #include <memory.h>
+#include <theme.h>
 
 /* 
  * Mithl OS Compositor / Desktop Environment
@@ -74,6 +75,9 @@ void desktop_draw_element(gui_renderer_t *renderer, gui_element_t *element) {
 }
 
 void desktop_init(void) {
+    // 1. Init Theme (Services)
+    theme_init();
+    
     // Initialize any desktop state here
     // terminal_init(); // Removed to prevent auto-spawn
     
@@ -641,11 +645,13 @@ static void draw_start_bubble(void) {
     int bubble_x = dock.x - bubble_w - 15;
     int bubble_y = dock.y;
     int radius = 16;
+    
+    theme_t *th = theme_get_current();
 
     rect_t bubble_rect = {bubble_x, bubble_y, bubble_w, bubble_h};
 
     // Draw Bubble Background
-    draw_rounded_rect_filled(bubble_rect, radius, 0x40FFFFFF); 
+    draw_rounded_rect_filled(bubble_rect, radius, th->bubble_bg); 
     
     // Draw scaled OS Logo with outline
     draw_scaled_os_logo(bubble_x, bubble_y, bubble_w, bubble_h);
@@ -660,25 +666,27 @@ static void draw_status_bubble(void) {
     int bubble_x = dock.x + dock.width + 15;
     int bubble_y = dock.y;
     int radius = 16; // Match dock corners
+    
+    theme_t *th = theme_get_current();
 
     rect_t bubble_rect = {bubble_x, bubble_y, bubble_w, bubble_h};
 
     // Draw Bubble Background
-    draw_rounded_rect_filled(bubble_rect, radius, 0x40FFFFFF);
+    draw_rounded_rect_filled(bubble_rect, radius, th->bubble_bg);
 
-    // Get time
+    // Get time & date
     rtc_time_t t = rtc_read_time(); 
     
+    // --- TIME STRING ---
     char time_str[32];
     int hour = t.hour;
     char *ampm = "AM";
     if (hour >= 12) {
-        ampm = "PM";
+        ampm = "PM"; 
         if (hour > 12) hour -= 12;
     }
     if (hour == 0) hour = 12;
     
-    // Helper to format time
     int idx = 0;
     if (hour >= 10) { time_str[idx++] = '0' + (hour/10); time_str[idx++] = '0' + (hour%10); } 
     else { time_str[idx++] = '0' + hour; }
@@ -693,22 +701,56 @@ static void draw_status_bubble(void) {
     time_str[idx++] = ampm[1];
     time_str[idx] = 0;
 
+    // --- DATE STRING (Format: DD/MM/YYYY) ---
+    char date_str[32];
+    idx = 0;
+    if (t.day < 10) { date_str[idx++] = '0'; }
+    if (t.day >= 10) { date_str[idx++] = '0' + (t.day/10); }
+    date_str[idx++] = '0' + (t.day%10);
+    
+    date_str[idx++] = '/';
+    
+    if (t.month < 10) { date_str[idx++] = '0'; }
+    if (t.month >= 10) { date_str[idx++] = '0' + (t.month/10); }
+    date_str[idx++] = '0' + (t.month%10);
+    
+    date_str[idx++] = '/';
+    
+    // Year (2025 -> 20 25)
+    int yr = t.year;
+    if (yr < 2000) yr += 2000; // Guess century if needed, but usually full year
+    
+    int y1 = yr / 1000; int y2 = (yr/100)%10; int y3 = (yr/10)%10; int y4 = yr%10;
+    date_str[idx++] = '0' + y1;
+    date_str[idx++] = '0' + y2;
+    date_str[idx++] = '0' + y3;
+    date_str[idx++] = '0' + y4;
+    date_str[idx] = 0;
+
     // Adaptive Text Color
+    // Check luminance of the wallpaper area under the bubble
+    // NOTE: This assumes transparency draws wallpaper. 
+    // Since draw_rounded_rect_filled supports alpha blending if implemented, 
+    // the text needs to stand out against the BLENDED result.
     int avg_lum = get_average_luminance(bubble_rect);
     uint32_t text_color = (avg_lum > 128) ? 0xFF000000 : 0xFFFFFFFF;
+    
+    // Layout: Time top, Date bottom
+    int text_h = 16; // SF font height
+    int gap = 2;     // Space between lines
+    int total_h = text_h * 2 + gap;
+    int start_y = bubble_y + (bubble_h - total_h) / 2;
+    
+    // Draw Time
+    int time_w = get_text_width_sf(time_str);
+    int time_x = bubble_x + (bubble_w - time_w) / 2;
+    draw_text_sf(time_str, time_x, start_y, text_color);
+    
+    // Draw Date
+    int date_w = get_text_width_sf(date_str);
+    int date_x = bubble_x + (bubble_w - date_w) / 2;
+    draw_text_sf(date_str, date_x, start_y + text_h + gap, text_color);
 
-    // Draw Time with Modern SF Font
-    // Manually center using get_text_width_sf
-    int text_w = get_text_width_sf(time_str);
-    int text_x = bubble_x + (bubble_w - text_w) / 2;
-    int text_y = bubble_y + (bubble_h - 16) / 2; // SF font is 16px high
-    
-    draw_text_sf(time_str, text_x, text_y, text_color);
-    
-    // Status Icons (WiFi placeholder) - Removed to clean up look or keep?
-    // User wants clean look. Let's keep it simple (just time) or refined.
-    // The previous manual drawing was ugly. Let's remove manual lines for now 
-    // to match the "clean" request, effectively trusting the Clock + Font update.
 }
 
 // desktop_draw_rect is called by desktop_draw -> desktop_draw_element (Root Draw)
@@ -734,6 +776,12 @@ void desktop_draw(void) {
     desktop_draw_rect(0, 0, 1024, 768);
 }
 
+// External assembly functions
+extern void asm_shutdown(void);
+extern void asm_reboot(void);
+// External ACPI
+#include <acpi.h>
+
 void shutdown_system(void) {
     // Clear screen and show shutdown message
     draw_boot_logo();
@@ -748,30 +796,13 @@ void shutdown_system(void) {
     // Small delay to show message
     for (volatile int i = 0; i < 50000000; i++);
     
-    // Disable interrupts
-    __asm__ volatile("cli");
+    // 1. Try ACPI Shutdown (Standard)
+    acpi_shutdown();
     
-    // ACPI Shutdown - VirtualBox specific order
-    // VirtualBox responds to 0xB004 first
-    outw(0xB004, 0x2000); // VirtualBox ACPI shutdown
+    // 2. Try Assembly Magic Ports (Fallback/VMs)
+    asm_shutdown();
     
-    // Small delay
-    for (volatile int i = 0; i < 10000000; i++);
-    
-    // QEMU/Bochs ACPI shutdown
-    outw(0x604, 0x2000);
-    
-    // Small delay
-    for (volatile int i = 0; i < 10000000; i++);
-    
-    // APM Shutdown (older systems)
-    outw(0x1000, 0x3400); // APM disconnect
-    outw(0x1000, 0x0001 | 0x3000); // APM shutdown
-    
-    // If all else fails, halt (don't reset!)
-    __asm__ volatile("hlt");
-    
-    // Loop forever
+    // Fallback if asm fails
     while(1) {
         __asm__ volatile("hlt");
     }
@@ -780,30 +811,14 @@ void shutdown_system(void) {
 void restart_system(void) {
     draw_boot_logo();
     rect_t text_rect = {0, 650, 1024, 50};
-    draw_text_centered("Restarting...", text_rect, 0xFFFFFF, 24);
+    draw_text_centered("Restarting...", text_rect, 0xFFFFFFFF, 24);
     graphics_swap_buffers();
     
     // Small delay
     for (volatile int i = 0; i < 50000000; i++);
     
-    // Disable interrupts
-    __asm__ volatile("cli");
-    
-    // Method 1: Keyboard controller reset (8042)
-    // Wait for keyboard controller to be ready (with timeout)
-    int timeout = 100000;
-    while ((inb(0x64) & 0x02) && timeout > 0) {
-        timeout--;
-    }
-    
-    // Send reset command
-    outb(0x64, 0xFE);
-    
-    // Small delay
-    for (volatile int i = 0; i < 10000000; i++);
-    
-    // Method 2: Triple fault (if keyboard reset fails)
-    __asm__ volatile("lidt (0)");
+    // Call Assembly Implementation
+    asm_reboot();
     
     // Loop forever (should never reach here)
     while(1) {

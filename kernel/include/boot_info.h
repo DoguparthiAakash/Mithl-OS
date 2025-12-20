@@ -42,7 +42,7 @@ typedef struct {
     const char* cmdline;
 
     // Acpi (RSDP)
-    void* acpi_rsdp;
+    uintptr_t acpi_rsdp;
 } boot_info_t;
 
 #endif

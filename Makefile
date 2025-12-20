@@ -10,7 +10,7 @@ CFLAGS   = -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Wall -Wextra -mno-s
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti -fno-use-cxa-atexit
 LDFLAGS  = -m32 -nostdlib -no-pie -Wl,-T,linker/linker.ld -o kernel.elf
 # Sources
-ASM_SOURCES = boot/boot.asm kernel/interrupts.asm kernel/gdt_flush.asm
+ASM_SOURCES = boot/boot.asm kernel/interrupts.asm kernel/gdt_flush.asm kernel/power.asm
 C_SOURCES   = kernel/kernel.c \
               kernel/gdt.c \
               kernel/idt.c \
@@ -46,7 +46,9 @@ C_SOURCES   = kernel/kernel.c \
               kernel/apps/settings/settings.c \
               kernel/graphics/triangle.c \
               kernel/gpu/gpu.c \
-              kernel/boot_adapter.c
+              kernel/boot_adapter.c \
+              kernel/acpi.c \
+              kernel/theme.c
 CXX_SOURCES = kernel/lib/cxx_runtime.cpp
 
 OBJECTS     = $(ASM_SOURCES:.asm=.o) $(C_SOURCES:.c=.o) $(CXX_SOURCES:.cpp=.o)

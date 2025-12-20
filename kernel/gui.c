@@ -4,6 +4,7 @@
 #include "vga.h"
 #include "string.h"
 #include "wm.h"
+#include <theme.h>
 
 gui_manager_t gui_mgr;
 
@@ -443,7 +444,7 @@ void gui_bring_to_front(gui_element_t *element) {
     }
 }
 
-// Draw a window with decorations (Title bar, Close/Min/Max buttons)
+// Draw a window with decorations
 void gui_draw_window(gui_renderer_t *renderer, gui_element_t *element)
 {
     if (!element || !renderer) return;
@@ -451,39 +452,50 @@ void gui_draw_window(gui_renderer_t *renderer, gui_element_t *element)
     gui_window_t *win = (gui_window_t *)element;
     rect_t bounds = element->bounds;
     
-    // Colors
-    uint32_t bg_color = 0xFFFFFFFF; // White content
-    // uint32_t title_bg = 0xF6F6F6; // Unused
-    // uint32_t border_col = 0xCCCCCC; // Unused
+    // Theme Colors
+    theme_t *theme = theme_get_current();
+    uint32_t bg_color = theme->window_bg;
+    uint32_t border_col = theme->window_border;
     
-    // Traffic Lights
+    // Traffic Lights (Standard macOS colors, usually fixed)
     uint32_t red = 0xFFFF5F56;
     uint32_t yellow = 0xFFFFBD2E;
     uint32_t green = 0xFF27C93F;
 
-    int radius = 10; // Rounded corners
-    int title_h = 30; // Bigger title bar
+    int radius = 10; 
+    int title_h = 30; 
     
     // 1. Draw Main Body with Rounded Corners
-    // Include title bar area in this rounded rect for unified look
     draw_rounded_rect_filled(bounds, radius, bg_color);
     
-    // 2. Title Bar Area (Top part)
-    // We want a subtle separator or just rely on unified look.
-    // Let's draw the title bar bg just for the top part if needed, 
-    // but typically it's unified. Let's draw a subtle line separator.
+    // 2. Window Border (Optional, if theme defines it)
+    // draw_rounded_rect_outline(bounds, radius, border_col); 
+
+    // 3. Title Separator
     int content_y = bounds.y + title_h;
-    draw_line(bounds.x, content_y, bounds.x + bounds.width, content_y, 0xE0E0E0);
+    draw_line(bounds.x, content_y, bounds.x + bounds.width, content_y, border_col);
     
-    // 3. Traffic Lights (RIGHT Aligned, macOS style)
+    // 3. Traffic Lights (RIGHT Aligned, Green-Yellow-Red order)
     // Vertical center of title bar = y + title_h / 2
     int btn_y = bounds.y + (title_h / 2);
     int spacing = 20;
-    int start_btn_x = bounds.x + bounds.width - 15 - (spacing * 2) - 12; // Right side
     
-    draw_circle_filled(start_btn_x, btn_y, 6, red);                    // Close
-    draw_circle_filled(start_btn_x + spacing, btn_y, 6, yellow);       // Minimize
-    draw_circle_filled(start_btn_x + spacing * 2, btn_y, 6, green);    // Maximize
+    // Start drawing from Right Edge
+    // Order: [Empty] [Green] [Yellow] [Red] [Edge]
+    // Red (Close): bounds.width - 15 - 12 (offset to center from edge padding? No, 15 is padding)
+    // Let's optimize.
+    // Rightmost button center: x + width - 15
+    // Middle button center:    x + width - 15 - 20
+    // Leftmost button center:  x + width - 15 - 40
+    
+    int right_margin = 20;
+    int red_x = bounds.x + bounds.width - right_margin;
+    int yellow_x = red_x - spacing;
+    int green_x = yellow_x - spacing;
+    
+    draw_circle_filled(green_x, btn_y, 6, green);      // Maximize (Leftmost of group)
+    draw_circle_filled(yellow_x, btn_y, 6, yellow);    // Minimize (Middle)
+    draw_circle_filled(red_x, btn_y, 6, red);          // Close (Rightmost)
     
     // 4. Title Text (Centered)
     if (win->title) {
@@ -567,25 +579,35 @@ void gui_window_event_handler(gui_element_t *element, gui_event_t *event)
         int title_h = 30;
         int btn_y = win->base.bounds.y + (title_h / 2);
         int spacing = 20;
-        int start_btn_x = win->base.bounds.x + win->base.bounds.width - 15 - (spacing * 2) - 12;
+
+        // Right Aligned Coords
+        int right_margin = 20;
+        int red_x = win->base.bounds.x + win->base.bounds.width - right_margin;
+        int yellow_x = red_x - spacing;
+        int green_x = yellow_x - spacing;
         
         // Check if click is in title bar area
         if (y >= win->base.bounds.y && y < win->base.bounds.y + title_h) {
-            // Close Button (Red) - First button on right
-            int dx = x - start_btn_x;
+            
+            // 1. Close Button (Red) - Rightmost
+            int dx = x - red_x;
             int dy = y - btn_y;
-            if (dx*dx + dy*dy <= 36) { // radius 6, so 6*6 = 36
+            if (dx*dx + dy*dy <= 36) { 
                  // Close Window
+                 gui_invalidate_rect(win->base.bounds); // Mark area as dirty BEFORE moving
                  win->base.bounds.x = -1000; // Hide offscreen
                  gui_mgr.needs_redraw = 1;
+
+                 // Also hide children (Terminal Panel) manually since we don't have recursive hiding yet
                  return;
             }
             
-            // Minimize Button (Yellow) - Middle button
-            dx = x - (start_btn_x + spacing);
+            // 2. Minimize Button (Yellow) - Middle
+            dx = x - yellow_x;
             if (dx*dx + dy*dy <= 36) {
                  // Minimize (hide offscreen but mark as minimized)
                  if (!win->is_minimized) {
+                     gui_invalidate_rect(win->base.bounds); // Mark area as dirty
                      win->is_minimized = 1;
                      win->saved_bounds = win->base.bounds; // Save position
                      win->base.bounds.x = -1000; // Hide
@@ -594,8 +616,8 @@ void gui_window_event_handler(gui_element_t *element, gui_event_t *event)
                  return;
             }
             
-            // Maximize Button (Green) - Last button on right
-            dx = x - (start_btn_x + spacing * 2);
+            // 3. Maximize Button (Green) - Leftmost of group
+            dx = x - green_x;
             if (dx*dx + dy*dy <= 36) {
                  if (!win->is_maximized) {
                       // Save current bounds

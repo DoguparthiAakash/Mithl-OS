@@ -99,6 +99,18 @@ void kmain(uint32_t magic, void* addr)
         for(;;) __asm__ volatile("hlt");
     }
 
+    // Pass ACPI RSDP (if present) to ACPI driver
+    // This prevents dangerous logical memory scans in UEFI
+    #include "acpi.h"
+    if (boot_info.acpi_rsdp != 0) {
+        acpi_set_rsdp(boot_info.acpi_rsdp);
+        console_log("[INFO] ACPI RSDP set from Multiboot.\n");
+    } else {
+        console_log("[INFO] No ACPI RSDP in Multiboot. Will scan (risky in UEFI).\n");
+    }
+
+    // --- Memory Manager ---
+
     // Initialize Physical Memory Manager (Phase 1)
     pmm_init(&boot_info);
     console_log("[INFO] PMM Initialized.\n");

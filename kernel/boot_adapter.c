@@ -15,6 +15,7 @@ static boot_mmap_entry_t mmap_buffer[MAX_MMAP_ENTRIES];
 static void parse_multiboot1(multiboot_info_t* mbi, boot_info_t* info) {
     info->bootloader_name = (mbi->flags & MULTIBOOT_FLAG_LOADER) ? (char*)mbi->boot_loader_name : "Multiboot 1 Loader";
     info->cmdline = (mbi->flags & MULTIBOOT_FLAG_CMDLINE) ? (char*)mbi->cmdline : "";
+    info->acpi_rsdp = 0; // MB1 doesn't usually provide ACPI directly (needs scan)
 
     // Parse Memory Map
     info->mmap_count = 0;
@@ -60,7 +61,9 @@ static void parse_multiboot2(unsigned long addr, boot_info_t* info) {
     info->mmap_entries = mmap_buffer;
     info->framebuffer.addr = 0;
     info->bootloader_name = "Multiboot 2 Loader";
+    info->bootloader_name = "Multiboot 2 Loader";
     info->cmdline = "";
+    info->acpi_rsdp = 0;
 
     while (tag->type != MULTIBOOT_TAG_TYPE_END) {
         switch (tag->type) {
@@ -105,14 +108,20 @@ static void parse_multiboot2(unsigned long addr, boot_info_t* info) {
                 info->framebuffer.bpp = fb->bpp;
                 break;
             }
-             
-            case MULTIBOOT_TAG_TYPE_ACPI_OLD:
-                 info->acpi_rsdp = (void*)((multiboot_tag_acpi_t*)tag)->rsdp;
-                 break;
 
-            case MULTIBOOT_TAG_TYPE_ACPI_NEW:
-                 info->acpi_rsdp = (void*)((multiboot_tag_acpi_t*)tag)->rsdp;
-                 break;
+            case MULTIBOOT_TAG_TYPE_ACPI_OLD: {
+                multiboot_tag_acpi_t *acpi = (multiboot_tag_acpi_t *)tag;
+                info->acpi_rsdp = (uintptr_t)acpi->rsdp;
+                break;
+            }
+            
+            case MULTIBOOT_TAG_TYPE_ACPI_NEW: {
+                multiboot_tag_acpi_t *acpi = (multiboot_tag_acpi_t *)tag;
+                info->acpi_rsdp = (uintptr_t)acpi->rsdp;
+                break;
+            }
+             
+
         }
         
         // Move to next tag (must be 8-byte aligned)

@@ -15,5 +15,6 @@ char *strstr(const char *haystack, const char *needle);
 int memcmp(const void *s1, const void *s2, size_t n);
 int strcmp(const char *s1, const char *s2);
 int bcmp(const void *s1, const void *s2, size_t n);
+int strncmp(const char *s1, const char *s2, size_t n);
 
 #endif // _STRING_H
