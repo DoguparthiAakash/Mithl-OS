@@ -1,5 +1,6 @@
 #include "keyboard.h"
 #include "ports.h"
+#include "input.h"
 
 #define KEYBOARD_DATA_PORT 0x60
 #define KEYBOARD_STATUS_PORT 0x64
@@ -16,7 +17,6 @@ const uint8_t scancode_to_ascii[128] = {
     0, 0, 0, '+', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 // Shifted scancode to ASCII mapping
-/* Unused shifted mapping
 static const uint8_t scancode_to_ascii_shifted[128] = {
     0, 0, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
     '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
@@ -24,7 +24,9 @@ static const uint8_t scancode_to_ascii_shifted[128] = {
     0, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0,
     '*', 0, ' ', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '-',
     0, 0, 0, '+', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-*/
+
+// Modifier State
+static uint8_t mod_state = 0;
 
 void keyboard_init(void)
 {
@@ -32,26 +34,48 @@ void keyboard_init(void)
     ks.key_pressed = 0;
     ks.key_code = 0;
     ks.ascii = 0;
+    mod_state = 0;
 }
 
 int keyboard_poll(void)
 {
     uint8_t status = inb(KEYBOARD_STATUS_PORT);
 
-    // Check if data is available
     // Check if data is available (Bit 0 set) AND it is NOT mouse data (Bit 5 clear)
-    // 0x21 = 0010 0001. We want 0x01.
-    // If bit 5 (0x20) is set, it's mouse data, so ignore it here.
     if ((status & 0x21) == 0x01)
     {
         uint8_t scancode = inb(KEYBOARD_DATA_PORT);
+        int release = (scancode & 0x80) ? 1 : 0;
+        uint8_t code = scancode & 0x7F;
 
-        // Handle key release (bit 7 set)
-        if (scancode & 0x80)
+        // Modifier Keycodes (Set 1)
+        // LShift: 0x2A, RShift: 0x36
+        // LCtrl: 0x1D
+        // LAlt: 0x38
+        // CapsLock: 0x3A
+
+        if (code == 0x2A || code == 0x36) { // Shift
+            if (release) mod_state &= ~KEY_MOD_SHIFT;
+            else mod_state |= KEY_MOD_SHIFT;
+        } else if (code == 0x1D) { // Ctrl
+            if (release) mod_state &= ~KEY_MOD_CTRL;
+            else mod_state |= KEY_MOD_CTRL;
+        } else if (code == 0x38) { // Alt
+            if (release) mod_state &= ~KEY_MOD_ALT;
+            else mod_state |= KEY_MOD_ALT;
+        } else if (code == 0x3A) { // CapsLock
+            if (!release) { // Toggle on press
+                 if (mod_state & KEY_MOD_CAPS) mod_state &= ~KEY_MOD_CAPS;
+                 else mod_state |= KEY_MOD_CAPS;
+            }
+        }
+
+        if (release)
         {
             ks.key_pressed = 0;
-            ks.key_code = scancode & 0x7F;
+            ks.key_code = code;
             ks.ascii = 0;
+            // Also report releases? Currently input system mainly uses presses for typing
         }
         else
         {
@@ -59,21 +83,33 @@ int keyboard_poll(void)
             ks.key_pressed = 1;
             ks.key_code = scancode;
 
-            // Convert to ASCII (simplified - no shift state tracking)
-            if (scancode < 128)
-            {
-                ks.ascii = scancode_to_ascii[scancode];
+            // Resolve ASCII
+            uint8_t ascii = 0;
+            if (code < 128) {
+                // Determine if we should use shifted map
+                // Shift works on everything in shifted map
+                // CapsLock only affects letters (approx. 0x10-0x19, 0x1E-0x26, 0x2C-0x32)
+                
+                int use_shift = (mod_state & KEY_MOD_SHIFT);
+                int is_alpha = (code >= 0x10 && code <= 0x19) || // Q-P
+                               (code >= 0x1E && code <= 0x26) || // A-L
+                               (code >= 0x2C && code <= 0x32);   // Z-M
+                               
+                if (mod_state & KEY_MOD_CAPS && is_alpha) {
+                    // Caps inverts shift for letters
+                    use_shift = !use_shift;
+                }
+                
+                if (use_shift) {
+                    ascii = scancode_to_ascii_shifted[code];
+                } else {
+                    ascii = scancode_to_ascii[code];
+                }
             }
-            else
-            {
-                ks.ascii = 0;
-            }
+            ks.ascii = ascii;
             
-            // Post event to queue
-            #include "input.h" // Ensure input.h is visible or prototyped
-            // We pass scancode as keycode for now. 
-            // In a real OS we might map to a standard keycode first.
-            input_add_key_event(scancode, 0); // 0 = Press
+            // Post event to queue with modifiers
+            input_add_key_event(code, ascii, mod_state, 0); // 0 = Press
         }
 
         return 1;

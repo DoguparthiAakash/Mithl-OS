@@ -1,6 +1,6 @@
 #include "mm/vmm.h"
 #include "mm/pmm.h"
-#include "multiboot.h"
+#include "boot_info.h"
 #include "string.h"
 #include "console.h"
 
@@ -58,10 +58,10 @@ int vmm_map_page(void* phys, void* virt) {
 
 
 
-void vmm_map_framebuffer(multiboot_info_t* mboot_info) {
-   if (mboot_info->flags & MULTIBOOT_FLAG_FB) {
-       uint32_t fb_addr = (uint32_t)mboot_info->framebuffer_addr;
-       uint32_t fb_size = mboot_info->framebuffer_pitch * mboot_info->framebuffer_height;
+void vmm_map_framebuffer(boot_info_t* boot_info) {
+   if (boot_info->framebuffer.addr != 0) {
+       uint32_t fb_addr = (uint32_t)boot_info->framebuffer.addr;
+       uint32_t fb_size = boot_info->framebuffer.pitch * boot_info->framebuffer.height;
        
        // Align size to page boundary
        if (fb_size % PAGE_SIZE) fb_size += PAGE_SIZE; // Rough roundup
@@ -76,7 +76,7 @@ void vmm_map_framebuffer(multiboot_info_t* mboot_info) {
    }
 }
 
-void vmm_init(multiboot_info_t* mboot_info) {
+void vmm_init(boot_info_t* boot_info) {
     serial_write("[VMM] Allocating Page Directory...\n");
     // 1. Allocate Page Directory from PMM
     kernel_page_directory = (pd_entry_t*)pmm_alloc_block();
@@ -99,7 +99,7 @@ void vmm_init(multiboot_info_t* mboot_info) {
     }
     
     // Map VESA Framebuffer
-    vmm_map_framebuffer(mboot_info);
+    vmm_map_framebuffer(boot_info);
     
     serial_write("[VMM] Loading CR3...\n");
     // 3. Load CR3

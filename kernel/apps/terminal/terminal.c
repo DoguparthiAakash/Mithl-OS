@@ -340,10 +340,8 @@ static void terminal_handle_event(gui_element_t *element, gui_event_t *event) {
     if (element->bounds.x == -9999) return;
     
     if (event->type == GUI_EVENT_KEY_PRESS) {
-        char key = event->keyboard.key;
-        uint8_t scancode = (uint8_t)key;
-        char ascii = 0;
-        if (scancode < 128) ascii = scancode_to_ascii[scancode];
+        char ascii = event->keyboard.key;
+        // uint8_t scancode = event->keyboard.raw_code;
         
         if (ascii) {
             if (ascii == '\n') { // Enter

@@ -95,6 +95,8 @@ fs_node_t *allocate_node(const char *name, uint32_t flags) {
     node->write = 0; // Read-only for now
     node->readdir = ramfs_readdir;
     node->finddir = ramfs_finddir;
+    node->create = 0; // Set later if directory
+    node->mkdir = 0;  // Set later if directory
     return node;
 }
 
@@ -109,16 +111,33 @@ fs_node_t *ramfs_create_file(const char *name, const char *content) {
     return node;
 }
 
+void ramfs_vfs_create(fs_node_t *parent, char *name, uint16_t permission);
+void ramfs_vfs_mkdir(fs_node_t *parent, char *name, uint16_t permission);
+
 fs_node_t *ramfs_create_dir(const char *name) {
     fs_node_t *node = allocate_node(name, FS_DIRECTORY);
-    node->ptr = (struct fs_node*)list_create(); // Store children list in ptr
+    node->ptr = (struct fs_node*)list_create();
+    node->create = ramfs_vfs_create;
+    node->mkdir = ramfs_vfs_mkdir;
     return node;
 }
 
 void ramfs_add_child(fs_node_t *dir, fs_node_t *child) {
     list_t *l = (list_t*)dir->ptr;
     list_append(l, child);
-    child->ptr = dir; // Parent pointer? No, ptr used for list in dir.
+    // generic fs_node doesn't have parent
+}
+
+void ramfs_vfs_create(fs_node_t *parent, char *name, uint16_t permission) {
+    (void)permission;
+    fs_node_t *file = ramfs_create_file(name, "");
+    ramfs_add_child(parent, file);
+}
+
+void ramfs_vfs_mkdir(fs_node_t *parent, char *name, uint16_t permission) {
+    (void)permission;
+    fs_node_t *dir = ramfs_create_dir(name);
+    ramfs_add_child(parent, dir);
 }
 
 // -- Init --

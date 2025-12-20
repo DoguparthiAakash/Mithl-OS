@@ -1,4 +1,5 @@
 #include "mm/pmm.h"
+#include "boot_info.h"
 #include <stdint.h>
 #include "string.h"
 #include "console.h"
@@ -48,46 +49,39 @@ static int pmm_first_free_frame() {
     return -1;
 }
 
-void pmm_init(multiboot_info_t* mboot_info) {
+void pmm_init(boot_info_t* boot_info) {
     // 1. Mark ALL memory as used by default (safer)
     memset(pmm_bitmap, 0xFF, sizeof(pmm_bitmap));
     pmm_used_blocks = PMM_MAX_FRAMES;
     pmm_total_blocks = PMM_MAX_FRAMES;
 
-    // 2. Parse Multiboot Memory Map to identify VALID RAM
+    // 2. Parse Unified Memory Map to identify VALID RAM
     // and mark those regions as free (unset bit)
-    if (mboot_info->flags & MULTIBOOT_FLAG_MMAP) {
-        multiboot_memory_map_t* mmap = (multiboot_memory_map_t*)mboot_info->mmap_addr;
-        size_t mmap_len = mboot_info->mmap_length;
-        
-        uintptr_t mmap_end = (uintptr_t)mmap + mmap_len;
-        
-        while((uintptr_t)mmap < mmap_end) {
-            if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) {
-                // Initialize this region
-                // Align to page boundaries
-                uint64_t addr = mmap->addr;
-                uint64_t len = mmap->len;
-                
-                // Skip low memory < 1MB to preserve BIOS/VGA/Kernel
-                if (addr < 0x100000) {
-                     // Use partial length if it crosses 1MB?
-                     // Just skip low mem for simplicity, PMM usually manages high mem
-                     // But we should free > 1MB
-                     if (addr + len > 0x100000) {
-                         uint64_t diff = 0x100000 - addr;
-                         addr = 0x100000;
-                         len -= diff;
-                     } else {
-                         // Entire region is low mem
-                         mmap = (multiboot_memory_map_t*)((uintptr_t)mmap + mmap->size + sizeof(unsigned int));
-                         continue;
-                     }
-                }
-                
-                pmm_init_region((uint32_t)addr, (size_t)len);
+    for (uint32_t i = 0; i < boot_info->mmap_count; i++) {
+        boot_mmap_entry_t* entry = &boot_info->mmap_entries[i];
+
+        if (entry->type == BOOT_MMAP_AVAILABLE) {
+            // Initialize this region
+            // Align to page boundaries
+            uint64_t addr = entry->base_addr;
+            uint64_t len = entry->length;
+            
+            // Skip low memory < 1MB to preserve BIOS/VGA/Kernel
+            if (addr < 0x100000) {
+                    // Use partial length if it crosses 1MB?
+                    // Just skip low mem for simplicity, PMM usually manages high mem
+                    // But we should free > 1MB
+                    if (addr + len > 0x100000) {
+                        uint64_t diff = 0x100000 - addr;
+                        addr = 0x100000;
+                        len -= diff;
+                    } else {
+                        // Entire region is low mem
+                        continue;
+                    }
             }
-            mmap = (multiboot_memory_map_t*)((uintptr_t)mmap + mmap->size + sizeof(unsigned int));
+            
+            pmm_init_region((uint32_t)addr, (size_t)len);
         }
     }
     

@@ -38,7 +38,9 @@ void input_poll(void)
             {
                 // Populate the GUI event from the keyboard event
                 gui_ke->type = GUI_EVENT_KEY_PRESS; // Assuming a single type for now
-                gui_ke->keyboard.key = (char)ke->keycode; // Cast or conversion needed
+                gui_ke->keyboard.key = ke->ascii; // Use resolved ASCII
+                gui_ke->keyboard.modifiers = ke->modifiers;
+                gui_ke->keyboard.raw_code = (uint8_t)ke->keycode;
                 gui_post_event(gui_ke);
             }
             // You may need to call free_key_event depending on your driver's design

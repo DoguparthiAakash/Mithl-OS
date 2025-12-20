@@ -15,9 +15,17 @@ typedef enum
     KEY_REPEAT
 } key_action_t;
 
+// Modifier Key Flags
+#define KEY_MOD_SHIFT (1 << 0)
+#define KEY_MOD_CTRL  (1 << 1)
+#define KEY_MOD_ALT   (1 << 2)
+#define KEY_MOD_CAPS  (1 << 3)
+
 typedef struct
 {
     uint16_t keycode;    // Key scan code
+    uint8_t modifiers;   // Modifier state
+    char ascii;          // Resolved ASCII character
     key_action_t action; // Event type
     uint32_t timestamp;  // Time of event
 } key_event_t;
@@ -57,7 +65,8 @@ void input_init(void);
  * @brief Polls for raw keyboard and mouse events and posts them to the GUI event queue.
  */
 // Add to queue (for drivers)
-void input_add_key_event(uint16_t keycode, uint8_t action);
+// Add to queue (for drivers)
+void input_add_key_event(uint16_t keycode, char ascii, uint8_t modifiers, uint8_t action);
 void input_add_mouse_event(mouse_event_t *event_data);
 
 void input_poll(void);

@@ -230,10 +230,13 @@ key_event_t *receive_key_event(void) {
     return event;
 }
 
-void input_add_key_event(uint16_t keycode, uint8_t action) {
+void input_add_key_event(uint16_t keycode, char ascii, uint8_t modifiers, uint8_t action) {
     if (key_queue.count >= MAX_KEY_EVENTS) return;
     key_event_t *event = &key_queue.events[key_queue.head];
     event->keycode = keycode;
+    event->ascii = ascii;
+    event->modifiers = modifiers;
+    event->action = (key_action_t)action;
     event->timestamp = 0;
     key_queue.head = (key_queue.head + 1) % MAX_KEY_EVENTS;
     key_queue.count++;

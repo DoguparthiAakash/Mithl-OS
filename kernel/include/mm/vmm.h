@@ -35,10 +35,10 @@
 typedef uint32_t pt_entry_t;
 typedef uint32_t pd_entry_t;
 
-#include "multiboot.h"
+#include "boot_info.h"
 
 // Functions
-void vmm_init(multiboot_info_t* mboot_info);
+void vmm_init(boot_info_t* boot_info);
 int vmm_map_page(void* phys, void* virt);
 void vmm_enable_paging();
 

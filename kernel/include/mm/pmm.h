@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "multiboot.h"
+#include "boot_info.h"
 
 // 4KB Pages
 #define PMM_PAGE_SIZE 4096
@@ -11,7 +11,7 @@
 #define PMM_BLOCKS_PER_BYTE 8
 
 // Function definitions
-void pmm_init(multiboot_info_t* mboot_info);
+void pmm_init(boot_info_t* boot_info);
 
 // Allocation/Deallocation of 4KB physical blocks
 void* pmm_alloc_block();

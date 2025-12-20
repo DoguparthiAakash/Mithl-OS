@@ -16,6 +16,7 @@
 #include "input.h"
 #include "idt.h"
 #include "multiboot.h"
+#include "boot_adapter.h"
 #include "filesystem.h"
 #include "desktop.h"
 #include "graphics.h"
@@ -67,7 +68,7 @@ void console_log(const char *msg) {
     serial_write(msg);  // Try Serial (reliable)
 }
 
-void kmain(uint32_t magic, multiboot_info_t* mbi)
+void kmain(uint32_t magic, void* addr)
 {
     // Initialize Serial Port FIRST for debugging
     serial_init();
@@ -89,21 +90,22 @@ void kmain(uint32_t magic, multiboot_info_t* mbi)
     console_log("[INFO] Constructors Called.\n");
     idt_init(); // Initialize IDT to catch exceptions
     console_log("[INFO] IDT Initialized.\n");
-    // Check Multiboot Magic
-    if (magic != MULTIBOOT_MAGIC) {
+
+    // Parse Multiboot Info
+    static boot_info_t boot_info;
+    if (parse_multiboot(magic, addr, &boot_info) != 0) {
         serial_write("[CRITICAL] Invalid Multiboot Magic!\n");
-        // We can't proceed safely usually, but let's try to hang or print
         console_write("PANIC: Invalid Multiboot Magic!\n");
         for(;;) __asm__ volatile("hlt");
     }
 
     // Initialize Physical Memory Manager (Phase 1)
-    pmm_init(mbi);
+    pmm_init(&boot_info);
     console_log("[INFO] PMM Initialized.\n");
 
     // Initialize Virtual Memory Manager (Phase 2)
-    void vmm_init(multiboot_info_t* mboot_info); // Prototype
-    vmm_init(mbi);
+    void vmm_init(boot_info_t* boot_info); // Prototype
+    vmm_init(&boot_info);
     console_log("[INFO] VMM Initialized (Paging Enabled).\n");
 
     // Initialize Heap (Requires VMM/PMM)
@@ -120,21 +122,26 @@ void kmain(uint32_t magic, multiboot_info_t* mbi)
     console_log("[INFO] Rust Initialized.\n");
 
     // Initialize Graphics
-    if (mbi->flags & MULTIBOOT_FLAG_FB) {
+    if (boot_info.framebuffer.addr != 0) {
         console_log("[INFO] Multiboot Graphics Available. Initializing VESA...\n");
-        graphics_init(mbi->framebuffer_width, mbi->framebuffer_height, 
-                      mbi->framebuffer_pitch, mbi->framebuffer_bpp, 
-                      (void*)(uint32_t)mbi->framebuffer_addr);
+        graphics_init(boot_info.framebuffer.width, boot_info.framebuffer.height, 
+                      boot_info.framebuffer.pitch, boot_info.framebuffer.bpp, 
+                      (void*)(uint32_t)boot_info.framebuffer.addr);
         console_log("[INFO] VESA Graphics Initialized.\n");
         
         // Initialize GPU acceleration
         void gpu_init(void);
         gpu_init();
     } else {
-        serial_write("[CRITICAL] No Framebuffer Flag!\n");
-        console_write("PANIC: No Framebuffer Flag!\n");
+        serial_write("[CRITICAL] No Framebuffer Found!\n");
+        console_write("PANIC: No Framebuffer Found!\n");
         for(;;) __asm__ volatile("hlt");
     }
+    
+    // Pass framebuffer info to GUI later if needed, but gui_init uses values passed to it.
+    // However, kmain calls gui_init using mbi->framebuffer_width... update that too.
+    int fb_width = boot_info.framebuffer.width;
+    int fb_height = boot_info.framebuffer.height;
 
     // Initialize input devices
     init_input_devices();
@@ -155,7 +162,7 @@ void kmain(uint32_t magic, multiboot_info_t* mbi)
     gui_renderer_t renderer;
     renderer.draw_rect = draw_rect_filled;
     renderer.draw_text = renderer_draw_text;
-    gui_init(mbi->framebuffer_width, mbi->framebuffer_height, &renderer);
+    gui_init(fb_width, fb_height, &renderer);
 
     console_write("[INFO] Init Desktop...\n");
     desktop_init();

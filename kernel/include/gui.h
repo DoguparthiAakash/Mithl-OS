@@ -83,7 +83,9 @@ typedef struct
         } mouse;
         struct
         {
-            char key;
+            char key;           // ASCII character (if applicable)
+            uint8_t modifiers;  // Modifier flags
+            uint8_t raw_code;   // Raw scancode/keycode
         } keyboard;
     };
 } gui_event_t;

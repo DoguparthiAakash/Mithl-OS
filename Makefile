@@ -45,7 +45,8 @@ C_SOURCES   = kernel/kernel.c \
               kernel/elf_loader.c \
               kernel/apps/settings/settings.c \
               kernel/graphics/triangle.c \
-              kernel/gpu/gpu.c
+              kernel/gpu/gpu.c \
+              kernel/boot_adapter.c
 CXX_SOURCES = kernel/lib/cxx_runtime.cpp
 
 OBJECTS     = $(ASM_SOURCES:.asm=.o) $(C_SOURCES:.c=.o) $(CXX_SOURCES:.cpp=.o)
@@ -94,8 +95,10 @@ iso: kernel.elf
 	echo 'set timeout=5' > bootiso/boot/grub/grub.cfg
 	echo 'set default=0' >> bootiso/boot/grub/grub.cfg
 	echo '' >> bootiso/boot/grub/grub.cfg
+	echo 'insmod all_video' >> bootiso/boot/grub/grub.cfg
+	echo '' >> bootiso/boot/grub/grub.cfg
 	echo 'menuentry "Mithl OS" {' >> bootiso/boot/grub/grub.cfg
-	echo '  multiboot /boot/kernel.elf' >> bootiso/boot/grub/grub.cfg
+	echo '  multiboot2 /boot/kernel.elf' >> bootiso/boot/grub/grub.cfg
 	echo '  boot' >> bootiso/boot/grub/grub.cfg
 	echo '}' >> bootiso/boot/grub/grub.cfg
 	

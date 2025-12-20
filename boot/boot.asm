@@ -26,13 +26,41 @@ dd 1024 ; width
 dd 768  ; height
 dd 32   ; depth
 
+; Multiboot2 Header (UEFI/GRUB2)
+SECTION .multiboot2
+align 8
+header_start:
+    dd 0xe85250d6                ; Magic number (multiboot 2)
+    dd 0                         ; Architecture 0 (protected mode i386)
+    dd header_end - header_start ; Header length
+    ; Checksum
+    dd 0x100000000 - (0xe85250d6 + 0 + (header_end - header_start))
+
+    ; Framebuffer Tag
+    align 8
+    dw 5      ; type (framebuffer)
+    dw 0      ; flags
+    dd 20     ; size
+    dd 1024   ; width
+    dd 768    ; height
+    dd 32     ; depth
+
+    ; End Tag
+    align 8
+    dw 0      ; type
+    dw 0      ; flags
+    dd 8      ; size
+header_end:
+
 SECTION .text
 global start
 extern kmain
 
 start:
-    ; Upon entry from GRUB (32-bit), EAX = multiboot magic, EBX = multiboot info ptr
-
+    ; Upon entry from GRUB (32-bit):
+    ; MB1: EAX = 0x2BADB002, EBX = multiboot info ptr
+    ; MB2: EAX = 0x36d76289, EBX = multiboot2 info ptr
+    
     ; set up a temporary stack
     mov     esp, stack_top
 
