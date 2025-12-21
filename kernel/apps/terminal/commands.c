@@ -599,6 +599,30 @@ void cmd_touch(terminal_t *term, const char *args) {
     terminal_print(term, "File created.\n");
 }
 
+void cmd_run_hello(terminal_t *term, const char *args) {
+    (void)args;
+    terminal_print(term, "Loading hello.elf...\n");
+    
+    // Call ELF Loader
+    extern uint32_t elf_load_file(const char *filename);
+    uint32_t entry = elf_load_file("hello.elf"); 
+    
+    if (entry) {
+        terminal_print(term, "Spawning process...\n");
+        // Cast and call
+        // void (*entry_func)(void) = (void (*)(void))entry;
+        // entry_func();
+        
+        // Spawn as separate thread so we don't block terminal
+        extern struct process *process_create(const char *name, void (*entry_point)(void));
+        process_create("HelloApp", (void (*)(void))entry);
+        
+        terminal_print(term, "Process spawned in background.\n");
+    } else {
+        terminal_print(term, "Failed to load hello.elf\n");
+    }
+}
+
 void cmd_mv(terminal_t *term, const char *args) {
     (void)args;
     terminal_print(term, "mv: not implemented\n");
@@ -630,6 +654,7 @@ static const command_t commands[] = {
     {"touch", cmd_touch, "Create empty file"},
     {"cp", cmd_cp, "Copy files"},
     {"mv", cmd_mv, "Move/rename files"},
+    {"run_hello", cmd_run_hello, "Run Hello World App"},
     
     /* File Commands */
     {"ls", cmd_ls, "List directory contents"},

@@ -114,6 +114,52 @@ void process_yield(void) {
     process_schedule();
 }
 
+// Exec: Replace current process image
+int process_exec(const char *filename, char *const argv[], char *const envp[]) {
+    // 1. Find file
+    // For now, assume elf_load_file handles finding it via VFS
+    // But elf_load_file returns 'entry point'. It loads into current address space?
+    // Our elf_loader just maps pages.
+    // If we are replacing, we should unmap old pages?
+    // For Mithl-OS "Thread Wrapper" style, we can't easily replace.
+    // BUT we must try.
+    
+    // Simplification: We spawn a NEW thread and kill the old one?
+    // That's fork+exec. 
+    // real exec replaces.
+    
+    // Let's implement 'spawn' semantics for now but call it exec.
+    // Or clear current address space.
+    
+    // TODO: Clear address space.
+    
+    uint32_t entry = elf_load_file(filename);
+    if (!entry) return -1;
+    
+    // Setup Stack with Argv
+    // Argument passing in Linux:
+    // Stack Top: argc
+    //            argv pointers...
+    //            0
+    //            envp pointers...
+    //            0
+    //            Data (actual strings)
+    
+    // This is complex. For now, ignore args.
+    
+    // Jump to entry
+    // We need to reset the stack and jump.
+    // But we are in kernel mode C.
+    // We can manually reset current_process->esp?
+    
+    // Hack: Just call it as function for now.
+    ((void (*)(void))entry)();
+    
+    // If it returns, exit process
+    process_exit();
+    return 0;
+}
+
 void process_exit(void) {
     // Deschedule self
     if (!current_process) return;

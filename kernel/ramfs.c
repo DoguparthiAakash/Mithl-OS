@@ -207,59 +207,52 @@ void ramfs_vfs_mkdir(fs_node_t *parent, char *name, uint16_t permission) {
 
 // -- Init --
 
+// Initialise Standard Unix Paths for Debian Compatibility
 void ramfs_init(void) {
-    // 1. Create Root "/"
-    fs_root = ramfs_create_dir("root");
-    
-    // 2. Create /home
-    fs_node_t *home = ramfs_create_dir("home");
-    ramfs_add_child(fs_root, home);
-    
-    // 3. Create /home/aakash
-    fs_node_t *user = ramfs_create_dir("aakash");
-    ramfs_add_child(home, user);
-    
-    // 4. Create standard folders
-    ramfs_add_child(user, ramfs_create_dir("Documents"));
-    ramfs_add_child(user, ramfs_create_dir("Downloads"));
-    ramfs_add_child(user, ramfs_create_dir("Desktop"));
-    
-    // 5. Create some files
-    fs_node_t *welcome = ramfs_create_file("welcome.txt", "Welcome to Mithl OS!\nThis is a virtual file system.");
-    ramfs_add_child(user, welcome);
-    
-    fs_node_t *todo = ramfs_create_file("todo.list", "- Make OS great\n- Implement VFS (Done)\n- Fix bugs");
-    ramfs_add_child(ramfs_create_dir("etc"), ramfs_create_file("passwd", "root:x:0:0:root:/root:/bin/bash\naakash:x:1000:1000:aakash:/home/aakash:/bin/bash"));
-    ramfs_add_child(fs_root, ramfs_finddir(fs_root, "etc")); // Re-attach etc to root? Logic slightly wrong above.
-    
-    // Correcting logic:
-    fs_node_t *etc = ramfs_create_dir("etc");
-    ramfs_add_child(fs_root, etc);
-    // (passwd already leaked above? fixed layout below)
-}
-
-// Redo ramfs_init cleanly
-void ramfs_init_clean(void) {
     fs_root = ramfs_create_dir("/");
     
+    // 1. Core Directories
+    fs_node_t *bin = ramfs_create_dir("bin");
+    fs_node_t *usr = ramfs_create_dir("usr");
+    fs_node_t *dev = ramfs_create_dir("dev");
+    fs_node_t *etc = ramfs_create_dir("etc");
+    fs_node_t *lib = ramfs_create_dir("lib");
+    fs_node_t *tmp = ramfs_create_dir("tmp");
     fs_node_t *home = ramfs_create_dir("home");
+    
+    ramfs_add_child(fs_root, bin);
+    ramfs_add_child(fs_root, usr);
+    ramfs_add_child(fs_root, dev);
+    ramfs_add_child(fs_root, etc);
+    ramfs_add_child(fs_root, lib);
+    ramfs_add_child(fs_root, tmp);
     ramfs_add_child(fs_root, home);
     
+    // 2. /usr subdirectories
+    ramfs_add_child(usr, ramfs_create_dir("bin"));
+    ramfs_add_child(usr, ramfs_create_dir("lib"));
+    ramfs_add_child(usr, ramfs_create_dir("share"));
+    
+    // 3. User Home
     fs_node_t *aakash = ramfs_create_dir("aakash");
     ramfs_add_child(home, aakash);
     
     ramfs_add_child(aakash, ramfs_create_dir("Documents"));
     ramfs_add_child(aakash, ramfs_create_dir("Downloads"));
-    ramfs_add_child(aakash, ramfs_create_dir("Music"));
-    ramfs_add_child(aakash, ramfs_create_dir("Pictures"));
-    ramfs_add_child(aakash, ramfs_create_dir("Videos"));
+    ramfs_add_child(aakash, ramfs_create_dir("Desktop"));
     
-    ramfs_add_child(aakash, ramfs_create_file("welcome.txt", "Welcome to Mithl OS v1.0!\n"));
-    ramfs_add_child(aakash, ramfs_create_file("notes.txt", "Visual style is key.\n"));
+    // 4. Config Files
+    ramfs_add_child(etc, ramfs_create_file("hostname", "mithl-os\n"));
+    ramfs_add_child(etc, ramfs_create_file("passwd", "root:x:0:0:root:/root:/bin/bash\naakash:x:1000:1000:aakash:/home/aakash:/bin/bash\n"));
+    
+    // 5. Welcome File
+    ramfs_add_child(aakash, ramfs_create_file("welcome.txt", "Welcome to Mithl OS! Linux binary compatibility layer active.\n"));
+}
 
-    fs_node_t *etc = ramfs_create_dir("etc");
-    ramfs_add_child(fs_root, etc);
-    ramfs_add_child(etc, ramfs_create_file("hostname", "mithl-os"));
+// Legacy function removed/merged
+void ramfs_init_clean(void) {
+    // Redirect
+    ramfs_init();
 }
 #include "boot_info.h"
 
@@ -302,4 +295,113 @@ void ramfs_load_modules(boot_info_t *info) {
         console_write(basename);
         console_write("\n");
     }
+}
+
+// --- Persistence Logic ---
+
+#define BACKUP_MAGIC 0x424B5550 // "BKUP"
+#define SECTOR_SIZE 512
+
+// ATA Externs
+extern int ata_read_sector(uint32_t lba, uint8_t *buffer);
+extern int ata_write_sector(uint32_t lba, const uint8_t *buffer);
+
+typedef struct {
+    uint32_t magic;
+    uint32_t count;
+} backup_header_t;
+
+typedef struct {
+    char path[64];
+    uint32_t size;
+    uint32_t sector_offset; 
+} backup_entry_t;
+
+// Helper to traverse and collect files
+void collect_files(fs_node_t *node, char *path_prefix, backup_entry_t *entries, uint32_t *count, uint32_t *data_sector_ptr) {
+    if (!node) return;
+    
+    // Construct full path
+    char full_path[128];
+    if (strcmp(path_prefix, "/") == 0) strcpy(full_path, "/");
+    else {
+        strcpy(full_path, path_prefix);
+        if (full_path[strlen(full_path)-1] != '/') strcat(full_path, "/");
+    }
+    strcat(full_path, node->name);
+    
+    // If file, add to list
+    if ((node->flags & 0x01) == 0x01) { // FS_FILE
+        if (*count >= 100) return; // Limit 100 files for demo
+        
+        backup_entry_t *ent = &entries[*count];
+        strcpy(ent->path, full_path);
+        ent->size = node->length;
+        ent->sector_offset = *data_sector_ptr;
+        
+        // Write Data immediately
+        uint32_t sectors_needed = (node->length + SECTOR_SIZE - 1) / SECTOR_SIZE;
+        
+        char *file_data = (char*)node->impl; // Direct access
+        if (file_data) {
+             for (uint32_t s = 0; s < sectors_needed; s++) {
+                 uint8_t sec_buf[SECTOR_SIZE];
+                 memset(sec_buf, 0, SECTOR_SIZE);
+                 
+                 uint32_t chunk = node->length - (s * SECTOR_SIZE);
+                 if (chunk > SECTOR_SIZE) chunk = SECTOR_SIZE;
+                 
+                 memcpy(sec_buf, file_data + (s * SECTOR_SIZE), chunk);
+                 ata_write_sector(*data_sector_ptr + s, sec_buf);
+             }
+        }
+        *data_sector_ptr += sectors_needed;
+        (*count)++;
+    }
+    
+    // If dir, recurse
+    if ((node->flags & 0x02) == 0x02) { // FS_DIRECTORY
+        list_t *children = (list_t*)node->ptr;
+        if (children) {
+            list_node_t *item = children->head;
+            while (item) {
+                collect_files((fs_node_t*)item->data, full_path, entries, count, data_sector_ptr);
+                item = item->next;
+            }
+        }
+    }
+}
+
+void ramfs_backup(void) {
+    console_write("[BACKUP] Starting Backup to Disk (ZFS Snapshot)...\n");
+    
+    backup_entry_t entries[100];
+    uint32_t file_count = 0;
+    
+    // Data starts after Header (Sec 0) + Metadata (Sec 1..15)
+    uint32_t data_start_sector = 16;
+    
+    // Traverse /home/aakash (User data only)
+    fs_node_t *home = vfs_resolve_path("/home/aakash");
+    collect_files(home, "/home/aakash", entries, &file_count, &data_start_sector);
+    
+    // Write Header
+    backup_header_t header;
+    header.magic = BACKUP_MAGIC;
+    header.count = file_count;
+    
+    uint8_t sec0[SECTOR_SIZE];
+    memset(sec0, 0, SECTOR_SIZE);
+    memcpy(sec0, &header, sizeof(header));
+    ata_write_sector(0, sec0);
+    
+    // Write Metadata
+    uint8_t *entry_bytes = (uint8_t*)entries;
+    for (int i = 0; i < 15; i++) {
+        uint8_t buf[SECTOR_SIZE];
+        memcpy(buf, entry_bytes + (i * SECTOR_SIZE), SECTOR_SIZE);
+        ata_write_sector(1 + i, buf);
+    }
+    
+    console_write("[BACKUP] Completed successfully.\n");
 }

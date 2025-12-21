@@ -23,6 +23,11 @@ void vmm_enable_paging_asm() {
     asm volatile("mov %0, %%cr0" :: "r"(cr0));
 }
 
+// Helper to invalidate TLB for a page
+static inline void vmm_flush_tlb_entry(void *addr) {
+    asm volatile("invlpg (%0)" :: "r" (addr) : "memory");
+}
+
 // Map a single page
 int vmm_map_page(void* phys, void* virt) {
     pd_entry_t* page_directory = kernel_page_directory;
@@ -41,17 +46,23 @@ int vmm_map_page(void* phys, void* virt) {
         memset(new_pt_phys, 0, PMM_PAGE_SIZE); // Clear it
         
         // Add to PD (User | Writable | Present)
-        *pd_entry = (uint32_t)new_pt_phys | I86_PDE_PRESENT | I86_PDE_WRITABLE; // Add flags as needed
+        // Enable USER access (0x4) so Ring 3 can access this range if PTE permits
+        *pd_entry = (uint32_t)new_pt_phys | I86_PDE_PRESENT | I86_PDE_WRITABLE | I86_PDE_USER;
     }
     
     // Get Page Table
+    // Note: This only works if new_pt_phys is IDENTITY MAPPED in Kernel space.
+    // Since we identity map first 128MB, and PMM allocates from low mem first, this works.
     pt_entry_t* page_table = (pt_entry_t*)((*pd_entry) & ~0xFFF);
     
     // Get entry
     pt_entry_t* pt_entry = &page_table[pt_index];
     
     // Set Entry
-    *pt_entry = (uint32_t)phys | I86_PTE_PRESENT | I86_PTE_WRITABLE; // Add flags as needed
+    *pt_entry = (uint32_t)phys | I86_PTE_PRESENT | I86_PTE_WRITABLE | I86_PTE_USER;
+    
+    // FLUSH TLB to ensure CPU sees the new mapping!
+    vmm_flush_tlb_entry(virt);
     
     return 1;
 }

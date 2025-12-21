@@ -81,6 +81,9 @@ void desktop_init(void) {
     // Initialize any desktop state here
     // terminal_init(); // Removed to prevent auto-spawn
     
+    console_write("[COMPOSITOR] Auto-launching File Manager...\n");
+    file_manager_show();
+    
     // Override Root Event Handler for Desktop Keyboard Navigation AND Drawing
     if (gui_mgr.root) {
         gui_mgr.root->event_handler = desktop_root_handler;
@@ -102,6 +105,11 @@ void desktop_check_clock(void) {
 
 // Desktop Root Handler for Keyboard Navigation and Mouse Clicks
 void desktop_root_handler(gui_element_t *element, gui_event_t *event) {
+    // DEBUG: Log ALL events to see if handler is being called
+    if (event->type == GUI_EVENT_MOUSE_DOWN) {
+        console_write("[DESKTOP_HANDLER] Mouse down event received!\n");
+    }
+    
     // Call default first (handles styling etc if any)
     gui_default_event_handler(element, event);
     

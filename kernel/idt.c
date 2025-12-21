@@ -17,6 +17,7 @@ extern void isr16(); extern void isr17(); extern void isr18(); extern void isr19
 extern void isr20(); extern void isr21(); extern void isr22(); extern void isr23();
 extern void isr24(); extern void isr25(); extern void isr26(); extern void isr27();
 extern void isr28(); extern void isr29(); extern void isr30(); extern void isr31();
+extern void isr128(); // Syscall
 
 static void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags)
 {
@@ -220,6 +221,10 @@ void idt_init(void)
     
     extern void irq0();
     idt_set_gate(32, (uint32_t)irq0,  0x08, 0x8E);
+    
+    // Syscall Gate (0x80)
+    // Flags: Present(0x80) | DPL3(0x60) | Interrupt Gate(0xE) = 0xEE
+    idt_set_gate(128, (uint32_t)isr128, 0x08, 0xEE); 
 
     idt_load((uint32_t)&idt_ptr);
 }

@@ -162,11 +162,16 @@ static void fm_draw_content(gui_renderer_t *renderer, gui_element_t *element) {
     // "Up" Button
     draw_rect((rect_t){main_x + 80, start_y + 8, 30, 24}, 0xFFDDDDDD);
     draw_text_sf_mono("^", main_x + 91, start_y + 12, FM_TEXT_COLOR);
+
+    // "Backup" Button
+    draw_rect((rect_t){main_x + 120, start_y + 8, 80, 24}, 0xFF28A745); // Green
+    draw_text_sf_mono("Backup", main_x + 130, start_y + 12, 0xFFFFFFFF);
     
     // Path Bar
-    draw_rect((rect_t){main_x + 120, start_y + 8, main_w - 130, 24}, 0xFFF9F9F9);
-    draw_rect_outline(main_x + 120, start_y + 8, main_w - 130, 24, 0xFFDDDDDD);
-    draw_text_sf_mono(fm_state.current_path, main_x + 125, start_y + 12, 0xFF555555);
+    int path_x = main_x + 210;
+    draw_rect((rect_t){path_x, start_y + 8, main_w - 220, 24}, 0xFFF9F9F9);
+    draw_rect_outline(path_x, start_y + 8, main_w - 220, 24, 0xFFDDDDDD);
+    draw_text_sf_mono(fm_state.current_path, path_x + 5, start_y + 12, 0xFF555555);
     
     // 3. File Grid
     int grid_y = start_y + 40;
@@ -243,6 +248,12 @@ void fm_handle_event(gui_element_t* element, gui_event_t* event) {
             // Up Button
             if (mx >= main_x + 80 && mx <= main_x + 110) {
                 fm_navigate_up();
+            }
+            // Backup Button
+            extern void ramfs_backup(void);
+            if (mx >= main_x + 120 && mx <= main_x + 200) {
+                 ramfs_backup();
+                 // Show success?
             }
         }
         

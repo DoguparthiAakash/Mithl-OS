@@ -31,6 +31,7 @@ C_SOURCES   = kernel/kernel.c \
               kernel/acpi.c \
               kernel/vga.c \
               kernel/list.c \
+              kernel/syscall.c \
               desktop_env/compositor.c \
               kernel/apps/terminal/terminal.c \
               kernel/apps/terminal/commands.c \
@@ -141,6 +142,9 @@ kernel/apps/doom/%.o: kernel/apps/doom/%.c
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 # Clean
+disk.img:
+	qemu-img create -f raw disk.img 32M
+
 clean:
 	rm -f $(OBJECTS) kernel.elf Mithl.iso
 	rm -rf bootiso
@@ -174,6 +178,13 @@ iso: kernel.elf
 	  cp DOOM1.WAD bootiso/boot/; \
 	  echo '  module2 /boot/DOOM1.WAD DOOM1.WAD' >> bootiso/boot/grub/grub.cfg; \
 	fi
+	
+	# Add Hello App
+	if [ -f userspace/apps/hello/hello.elf ]; then \
+	  cp userspace/apps/hello/hello.elf bootiso/boot/; \
+	  echo '  module2 /boot/hello.elf hello.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+	
 	echo '  boot' >> bootiso/boot/grub/grub.cfg
 	echo '}' >> bootiso/boot/grub/grub.cfg
 	
@@ -191,5 +202,5 @@ run-uefi: iso
 	else \
 		echo "OVMF firmware not found. Install with: sudo apt install ovmf"; \
 		echo "Falling back to BIOS mode..."; \
-		qemu-system-x86_64 -cdrom Mithl.iso -serial stdio; \
+		qemu-system-x86_64 -cdrom Mithl.iso -serial stdio -hda disk.img; \
 	fi

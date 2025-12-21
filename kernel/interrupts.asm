@@ -57,6 +57,40 @@ ISR_NOERRCODE 29
 ISR_NOERRCODE 30
 ISR_NOERRCODE 31
 
+; SYSCALL (int 0x80)
+global isr128
+isr128:
+    cli
+    push 0          ; No Error
+    push 128        ; Int No
+    pusha           ; Save ALL registers (EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI)
+    
+    mov ax, ds
+    push eax        ; Save DS
+    
+    mov ax, 0x10    ; Kernel Data Segment
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    
+    push esp        ; Pass pointer to stack (registers_t*)
+    extern syscall_handler
+    call syscall_handler
+    add esp, 4      ; Cleanup argument
+    
+    pop eax         ; Restore DS
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    
+    popa            ; Restore Registers (including EAX which typically holds return value)
+                    ; Note: syscall_handler MUST update the stack copy of EAX to return values!
+    add esp, 8      ; Cleanup Error code and Int No
+    sti
+    iret
+
 ; IRQ0 (Timer)
 global irq0
 irq0:
