@@ -51,7 +51,8 @@ static inline void *realloc(void *ptr, size_t size) {
 #define krealloc realloc
 #define kcalloc calloc
 #define exit(n) 
-#define getenv(s) 0
+// #define getenv(s) 0  // Now implemented as real function in libc_doom.c
+char *getenv(const char *name);  // Declaration
 #define atoi(s) 0 // TODO: imp
 static inline int abs(int x) { return x < 0 ? -x : x; }
 

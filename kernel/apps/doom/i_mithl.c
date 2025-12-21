@@ -22,10 +22,23 @@ int mb_used = 8;
 extern boolean devparm; // Defined in d_main.c
 extern byte* screens[5]; // Defined in v_video.c typically
 
+// Command-line arguments for DOOM
+extern int myargc;
+extern char **myargv;
+
 // --- SYSTEM ---
 
 void I_Init (void) {
-    // console_write("[DOOM] I_Init\n");
+    // Set up only program name, let IdentifyVersion find the WAD
+    static char *doom_args[] = {
+        "doom",           // argv[0]
+        NULL
+    };
+    
+    myargc = 1;  
+    myargv = doom_args;
+    
+    serial_write("[DOOM] I_Init: Auto-detecting WADs (myargc=1)\n");
 }
 
 void I_Quit (void) {
@@ -61,6 +74,9 @@ int I_GetTime (void) {
 extern void process_exit(void);
 
 void I_Error (char *error, ...) {
+    serial_write("\n[DOOM ERROR] ");
+    serial_write(error);
+    serial_write("\n");
     console_write("\n[DOOM ERROR] ");
     console_write(error);
     console_write("\n");
@@ -290,3 +306,16 @@ void I_InitNetwork (void) {
 }
 
 void I_NetCmd (void) { }
+
+// Wrapper function to set up DOOM and call D_DoomMain
+// This should be called instead of D_DoomMain directly
+void DOOM_Start(void) {
+    serial_write("[DOOM] DOOM_Start called\n");
+    
+    // Set up command-line arguments BEFORE calling D_DoomMain
+    I_Init();
+    
+    // Now call the real DOOM main function
+    extern void D_DoomMain(void);
+    D_DoomMain();
+}

@@ -142,4 +142,9 @@ We love open source! If you want to fix a bug, add a driver, or redesign an icon
 ## 📜 License
 Mithl OS is open-source software licensed under the **MIT License**. Feel free to use it, learn from it, and break it!
 
+## Note
+*This OS is created because of my curiosity. its "Neither Funded Nor Earning from it".*
+
+*If you willing to use the code or contrubuting to develop the OS to the nextlevel to make it everyone to use, you are hartly Welcomed and make contributions, suggestions and make the os to grow like the linux community.*
+
 *Crafted with ❤️ and a lot of caffeine by Aakash and the Open Source Community.*

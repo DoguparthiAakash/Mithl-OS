@@ -28,7 +28,7 @@
 #include "fs/fat32/fat32.h"
 
 // Forward declaration for Doom
-extern void D_DoomMain(void);
+extern void DOOM_Start(void);  // Wrapper that calls I_Init() then D_DoomMain()
 extern void doom_assign_window(gui_window_t *w);
 
 // Safe wrapper to prevent multiple launches or reentry if single-threaded
@@ -48,7 +48,7 @@ void launch_doom_safe(void) {
     
     // 3. Spawn Doom as a background PROCESS/THREAD
     // This prevents blocking the kernel/GUI loop!
-    process_create("Doom", D_DoomMain);
+    process_create("Doom", DOOM_Start);  // Use DOOM_Start wrapper
 }
 
 void launch_file_manager_safe(void) {

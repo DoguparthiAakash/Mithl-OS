@@ -16,22 +16,56 @@ typedef struct {
     uint32_t pos;
 } MEM_FILE;
 
+// Prototypes
+int strncasecmp(const char *s1, const char *s2, size_t n);
+size_t strlen(const char *s);
+
+// Helper: Check if module string matches requested filename (basename) case-insensitive
+static int module_matches_filename(const char *mod_str, const char *filename) {
+    if (!mod_str || !filename) return 0;
+    
+    // Extract basename
+    const char *base = filename;
+    const char *p = filename;
+    while (*p) {
+        if (*p == '/' || *p == '\\') base = p + 1;
+        p++;
+    }
+    
+    size_t base_len = strlen(base);
+    if (base_len == 0) return 0;
+
+    // Search for basename in mod_str (case insensitive)
+    const char *curr = mod_str;
+    while (*curr) {
+        if (strncasecmp(curr, base, base_len) == 0) {
+            return 1;
+        }
+        curr++;
+    }
+    return 0;
+}
+
 FILE *fopen(const char *filename, const char *mode) {
     uint32_t i;
     (void)mode;
     
     if (!filename) return 0;
     
-    for (i = 0; i < 10; i++) { // Use static 10 or boot_info.mod_count logic if robust
-        // But referencing boot_info.modules safely
+    serial_write("[DOOM] fopen: ");
+    serial_write(filename);
+    
+    // Search modules
+    for (i = 0; i < 10; i++) { 
         if (i >= boot_info.mod_count) break;
         
-        // C89: declarations at top
         boot_module_t *mod = &boot_info.modules[i];
         
-        // Exact match on filename
-        // mod->string might be "doom1.wad"
-        if (mod->string && strcmp((char*)mod->string, filename) == 0) { 
+        if (mod->string && module_matches_filename((char*)mod->string, filename)) { 
+             serial_write(" -> Found in module: ");
+             serial_write((char*)mod->string);
+             serial_write("\n");
+             
              MEM_FILE *f = (MEM_FILE*)memory_alloc(sizeof(MEM_FILE));
              if (!f) return 0;
              f->data = (uint8_t*)mod->mod_start;
@@ -40,6 +74,8 @@ FILE *fopen(const char *filename, const char *mode) {
              return (FILE*)f;
         }
     }
+    
+    serial_write(" -> Not found\n");
     return 0;
 }
 
@@ -144,7 +180,37 @@ long lseek(int fd, long offset, int whence) { (void)fd; (void)offset; (void)when
 int read(int fd, void *buf, size_t count) { (void)fd; (void)buf; (void)count; return 0; }
 int write(int fd, const void *buf, size_t count) { (void)fd; (void)buf; return count; }
 int mkdir(const char *pathname, int mode) { (void)pathname; (void)mode; return -1; }
-int access(const char *pathname, int mode) { (void)pathname; (void)mode; return -1; } /* Just fail access check */
+int access(const char *pathname, int mode) { 
+    (void)mode;
+    
+    if (!pathname) return -1;
+    
+    serial_write("[DOOM] access: ");
+    serial_write(pathname);
+
+    // Search modules for file existence
+    uint32_t i;
+    for (i = 0; i < 10; i++) {
+        if (i >= boot_info.mod_count) break;
+        boot_module_t *mod = &boot_info.modules[i];
+        
+        if (mod->string) {
+             serial_write(" Checking mod: '");
+             serial_write((char*)mod->string);
+             serial_write("' ... ");
+             
+             if (module_matches_filename((char*)mod->string, pathname)) {
+                 serial_write("MATCH!\n");
+                 return 0;
+             }
+             serial_write("No match.\n");
+        }
+    }
+
+    serial_write(" -> Not found\n");
+    return -1;
+}
+
 
 #include "libc_shim/stdio.h"
 #include "libc_shim/stdlib.h"
@@ -204,3 +270,13 @@ char *sndserver_filename = "./sndserver";
 // Missing HAL logic
 void I_SetMusicVolume(int volume) { (void)volume; }
 
+// Environment variable support (fake for DOOM)
+char *getenv(const char *name) {
+    if (strcmp(name, "HOME") == 0) {
+        return "/home/user";  // Fake home directory
+    }
+    if (strcmp(name, "USER") == 0) {
+        return "user";
+    }
+    return NULL;  // Not found
+}
