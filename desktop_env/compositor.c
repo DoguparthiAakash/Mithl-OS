@@ -176,30 +176,45 @@ void desktop_root_handler(gui_element_t *element, gui_event_t *event) {
                  // Valid Click on Icon i
                  selected_icon = icon_index;
                  
+                 // DEBUG: Print which icon was clicked
+                 console_write("[COMPOSITOR] Icon clicked: ");
+                 if (icon_index == 0) console_write("0 (Computer/FM)\n");
+                 else if (icon_index == 1) console_write("1 (File Manager)\n");
+                 else if (icon_index == 2) console_write("2 (Terminal)\n");
+                 else if (icon_index == 3) console_write("3 (Notepad)\n");
+                 else if (icon_index == 4) console_write("4 (Settings)\n");
+                 else if (icon_index == 5) console_write("5 (Doom)\n");
+                 
                  if (selected_icon == 0) {
+                     console_write("[COMPOSITOR] Launching File Manager (icon 0)\n");
                      file_manager_show();
                  }
                  else if (selected_icon == 1) {
+                     console_write("[COMPOSITOR] Launching File Manager (icon 1)\n");
                      file_manager_show();
                  }
+                 else if (selected_icon == 5) {
+                     // Doom - call the launch function from kernel.c
+                     extern void launch_doom_safe(void);
+                     console_write("[COMPOSITOR] Launching Doom via kernel launcher\n");
+                     launch_doom_safe();
+                 }
                  else if (selected_icon == 2) {
+                     console_write("[COMPOSITOR] Launching Terminal\n");
                      terminal_show();
                  }
                  else if (selected_icon == 3) {
+                     console_write("[COMPOSITOR] Launching Text Editor\n");
                      text_editor_show();
                  }
                  else if (selected_icon == 4) {
+                     console_write("[COMPOSITOR] Launching Settings\n");
                      settings_show();
-                 }
-                 else if (selected_icon == 5) {
-                     // Launch Doom
-                     terminal_show();
-                     terminal_run_command_active("doom");
                  }
                  
                  gui_mgr.needs_redraw = 1;
                  return;
-            }
+             }
         }
 
         // Click elsewhere -> Deselect

@@ -206,11 +206,20 @@ static rect_t util_rect_union(rect_t r1, rect_t r2) {
 void gui_invalidate_rect(rect_t rect) {
     if (rect.width <= 0 || rect.height <= 0) return;
     
+    // Union with existing dirty rect
     if (gui_mgr.needs_redraw == 0) {
         gui_mgr.dirty_rect = rect;
         gui_mgr.needs_redraw = 1;
     } else {
         gui_mgr.dirty_rect = util_rect_union(gui_mgr.dirty_rect, rect);
+    }
+    
+    // Union with background dirty rect (Always redraw background for invalid areas)
+    if (gui_mgr.needs_background_redraw == 0) {
+        gui_mgr.background_dirty_rect = rect;
+        gui_mgr.needs_background_redraw = 1;
+    } else {
+        gui_mgr.background_dirty_rect = util_rect_union(gui_mgr.background_dirty_rect, rect);
     }
 }
 
@@ -310,12 +319,17 @@ void gui_run(void)
     if (gui_mgr.needs_redraw) {
         // LAYER-BASED RENDERING: Redraw background first if needed
         if (gui_mgr.needs_background_redraw) {
+            // Set clip to background dirty rect
+            graphics_set_clip(gui_mgr.background_dirty_rect);
+            
             // Redraw desktop background (wallpaper + top bar + dock) for dirty region
-            extern void desktop_draw_rect(int x, int y, int w, int h);
-            desktop_draw_rect(gui_mgr.background_dirty_rect.x, 
-                            gui_mgr.background_dirty_rect.y,
-                            gui_mgr.background_dirty_rect.width,
-                            gui_mgr.background_dirty_rect.height);
+            // Redraw desktop background (wallpaper + top bar + dock) for dirty region
+            // Since external desktop_draw_rect source is missing/unreliable, we use a local fallback
+            // that draws a solid color or pattern to ensure the buffer is cleared.
+            draw_rect_filled(gui_mgr.background_dirty_rect, 0xFF336699); // Solid Slate Blue Background
+            
+            // If we had a wallpaper function, we'd call it here.
+            // draw_wallpaper(gui_mgr.background_dirty_rect);
             
             // Reset background redraw state
             gui_mgr.needs_background_redraw = 0;
@@ -704,7 +718,9 @@ gui_window_t *gui_create_window(const char *title, int x, int y, int width, int 
     win->base.bounds.x = x;
     win->base.bounds.y = y;
     win->base.bounds.width = width;
+    win->base.bounds.width = width;
     win->base.bounds.height = height;
+    win->base.flags = 0; // Initialize flags (Ensure not HIDDEN by garbage)
     
     // Copy title using manual logic since no strdup
     int len = 0; while(title[len]) len++;

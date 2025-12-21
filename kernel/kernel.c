@@ -1,3 +1,4 @@
+
 #include "keyboard.h"
 #include "mouse.h"
 #include "memory.h"
@@ -23,6 +24,35 @@
 #include "mm/pmm.h"
 #include "process.h"
 #include "vfs.h"
+#include "apps/file_manager/file_manager.h"
+
+// Forward declaration for Doom
+extern void D_DoomMain(void);
+extern void doom_assign_window(gui_window_t *w);
+
+// Safe wrapper to prevent multiple launches or reentry if single-threaded
+static int doom_launched = 0;
+void launch_doom_safe(void) {
+    if (doom_launched) return;
+    doom_launched = 1;
+    console_write("[KERNEL] Launching Doom...\n");
+    
+    // 1. Create Window for Doom (Main Thread/GUI Thread)
+    // 320x200 scaled by 2 = 640x400. Add Chrome.
+    gui_window_t *w = gui_create_window("DOOM", 100, 100, 640, 450);
+    w->base.flags = 0; // Visible
+    
+    // 2. Assign window to Doom INTERFACE (i_mithl.c)
+    doom_assign_window(w);
+    
+    // 3. Spawn Doom as a background PROCESS/THREAD
+    // This prevents blocking the kernel/GUI loop!
+    process_create("Doom", D_DoomMain);
+}
+
+void launch_file_manager_safe(void) {
+    file_manager_show();
+}
 
 // Initialize inputs
 static void init_input_devices(void)
@@ -210,6 +240,9 @@ void kmain(uint32_t magic, void* addr)
     
     // Enable Interrupts (PIT will drive preemption)
     asm volatile("sti");
+    
+    // Mouse Click Debounce State
+    static int handled_click = 0;
 
     // === Main event loop ===
     while (1)
@@ -223,11 +256,72 @@ void kmain(uint32_t magic, void* addr)
         int cur_y = m->y;
         
         // Use hardcoded hotspot values matching cursor_icon.h
-        // We could include the header but hardcoding is safe if we match it.
-        // CURSOR_HOT_X = 5, CURSOR_HOT_Y = 4
         int hot_x = 5;
         int hot_y = 4;
         
+        // DOCK INTERCEPTOR FIX
+        int screen_h = gui_mgr.screen_height;
+        int screen_w = gui_mgr.screen_width;
+        int dock_h = 90;
+        int dock_y = screen_h - dock_h;
+        
+        if (m->buttons & 1) { // Left Click
+             if (!handled_click) {
+                 // DEBUG MOUSE CLICKS
+                 char buf[64];
+                 // Warning: implicit int to string conversion if no helper?
+                 // assuming simple printf style or I'll implement a dumb one? 
+                 // We don't have sprintf in kernel.c easily unless I include stdio shim.
+                 // Let's just print simple messages with values if possible, or just ranges.
+                 
+                 console_write("MOUSE CLICK: Y=");
+                 // Hacky int print since vsprintf might not be available
+                 // Use simple checks to print range for debugging visualy
+                 if (cur_y > dock_y) console_write(" > DOCK_Y");
+                 else console_write(" < DOCK_Y");
+                 console_write("\n");
+                 
+                 if (cur_y > dock_y) {
+                     // In Dock Area
+                     console_write("[KERNEL] Dock Click Detected!\n");
+                     
+                     // Calculate Icon Index roughly
+                     int dock_w = 7 * 64; // Approx
+                     int dock_start_x = (screen_w - dock_w) / 2;
+                     
+                     int icon_idx = (cur_x - dock_start_x) / 64;
+                     
+                     // Debug Index
+                     // console_write("Icon Index: ");
+                     // print_int(icon_idx); // missing helper
+                     
+                     if (cur_x >= dock_start_x) {
+                         // Widen the hit targets slightly by checking range
+                         // FM: Index 1 or 2
+                         if (icon_idx >= 1 && icon_idx <= 2) {
+                             // Try launching FM
+                             console_write("[KERNEL] Launching File Manager [Index 1-2]\n");
+                             launch_file_manager_safe();
+                         }
+                         // Doom: Index 5 or 6 (allow 5+ to be safe)
+                         else if (icon_idx >= 5) {
+                             // Doom is likely last
+                             console_write("[KERNEL] Launching Doom [Index 5+]\n");
+                             launch_doom_safe();
+                         } else {
+                             console_write("[KERNEL] Clicked Index: Unknown/Ignored\n");
+                         }
+                     } else {
+                         console_write("[KERNEL] Click Left of Dock\n");
+                     }
+                 }
+                 handled_click = 1; // Debounce
+             }
+        } else {
+             // Reset when released
+             handled_click = 0;
+        }
+
         // If mouse moved, we need to redraw TWO areas:
         // A. The OLD cursor position (to erase it / restore background)
         // B. The NEW cursor position (to draw it)
@@ -244,6 +338,9 @@ void kmain(uint32_t magic, void* addr)
         // This processes events and redraws DIRTY regions to the BACKBUFFER.
         // It does NOT present to screen yet.
         desktop_check_clock();
+        // desktop_update(); // Skip broken desktop update that might consume clicks? 
+        // Or keep it for clock updates? 
+        // Keep it, but our interceptor runs first.
         desktop_update(); 
 
         // 4. Force global redraw if requested (e.g. wallpaper change)

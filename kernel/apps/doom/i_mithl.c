@@ -47,11 +47,14 @@ int I_GetTime (void) {
     return t++;
 }
 
+extern void process_exit(void);
+
 void I_Error (char *error, ...) {
-    console_write("[DOOM ERROR] ");
+    console_write("\n[DOOM ERROR] ");
     console_write(error);
     console_write("\n");
-    for(;;);
+    // Shutdown cleanly instead of hanging
+    process_exit(); 
 }
 
 int I_GetHeapSize (void) {
@@ -80,6 +83,13 @@ static uint32_t doom_palette[256];
 
 void I_InitGraphics (void) {
     console_write("[DOOM] Graphics Init\n");
+    // Allocate video buffer (320x200 palettized)
+    screens[0] = (byte*)memory_alloc(320 * 200);
+    if (screens[0]) {
+        memset(screens[0], 0, 320 * 200);
+    } else {
+        console_write("[DOOM] CRITICAL: Failed to allocate video buffer!\n");
+    }
 }
 
 void I_ShutdownGraphics (void) { }

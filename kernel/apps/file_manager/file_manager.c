@@ -39,9 +39,20 @@ void file_manager_init(void) {
 
 // Read directory content
 void fm_refresh(void) {
+    console_write("[FM] Refreshing path: ");
+    console_write(fm_state.current_path);
+    console_write("\n");
+
     fs_node_t *node = vfs_resolve_path(fm_state.current_path);
-    if (!node || (node->flags & 0x7) != FS_DIRECTORY) {
-        // Fallback to root if path invalid
+    if (!node) {
+        console_write("[FM] Path failed resolution!\n");
+        strcpy(fm_state.current_path, "/"); // Fail safe
+        node = fs_root;
+    }
+    
+    if (node && (node->flags & 0x7) != FS_DIRECTORY) {
+         console_write("[FM] Not a directory!\n");
+         // Fallback to root if path invalid
         strcpy(fm_state.current_path, "/");
         node = fs_root;
     }
@@ -294,8 +305,17 @@ void fm_handle_event(gui_element_t* element, gui_event_t* event) {
 }
 
 void file_manager_show(void) {
+    console_write("[FM] Show requested.\n");
+
     if (!fm_state.window) {
+        console_write("[FM] Creating Window.\n");
         fm_state.window = gui_create_window("File Manager", 100, 100, 700, 500);
+        
+        if (!fm_state.window) {
+             console_write("[FM] Failed to create window!\n");
+             return;
+        }
+
         fm_state.window->base.draw = fm_draw_content;
         fm_state.window->base.event_handler = fm_handle_event;
         
@@ -305,10 +325,11 @@ void file_manager_show(void) {
         gui_add_element(gui_mgr.root, (gui_element_t*)fm_state.window);
     }
     
-    // Bring to front and restore if minimized
-    if (fm_state.window->base.bounds.x < 0 && fm_state.window->base.bounds.x > -2000) { 
-        // Just hidden
-        fm_state.window->base.bounds.x = 100; // Restore default or saved?
+    // Force reset bounds if suspicious (e.g. off screen or minimized)
+    if (fm_state.window->base.bounds.x < 0 || fm_state.window->base.bounds.x > 1000) { 
+        fm_state.window->base.bounds.x = 100;
+        fm_state.window->base.bounds.y = 100;
+        console_write("[FM] Reset bounds.\n");
     }
     
     gui_bring_to_front((gui_element_t*)fm_state.window);

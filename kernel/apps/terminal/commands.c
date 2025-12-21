@@ -57,6 +57,28 @@ void cmd_doom(terminal_t *term, const char *args) {
     process_create("Doom", D_DoomMain);
 }
 
+void launch_doom_app(void) {
+    // 1. Create Window (Main Thread)
+    gui_window_t *win = gui_create_window("DOOM v1.1", 100, 100, 660, 450);
+    
+    // 2. Override Draw Handler
+    if (win) {
+         win->base.draw = doom_draw; 
+         doom_assign_window(win);
+         win->base.background_color = 0xFF000000;
+         gui_bring_to_front((gui_element_t*)win);
+    }
+    
+    // Set args
+    static char *doom_args[5];
+    doom_args[0] = "doom";
+    myargc = 1;
+    myargv = doom_args;
+    
+    // 3. Spawn Doom Thread
+    process_create("Doom", D_DoomMain);
+}
+
 /* Helper: String starts with */
 static int starts_with(const char *str, const char *prefix) {
     while (*prefix) {
