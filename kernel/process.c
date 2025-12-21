@@ -15,6 +15,25 @@ void process_init(void) {
     console_log("[INFO] Process Manager Initialized.\n");
 }
 
+extern void switch_task(uint32_t *next_stack, uint32_t *current_stack);
+
+// Helper to initialize stack for a new thread
+static void *prepare_stack(void *stack_base, void (*entry_point)(void)) {
+    uint32_t *stack = (uint32_t *)stack_base;
+    
+    // Simple stack layout matching switch_task:
+    // [EIP] [EBP] [EBX] [ESI] [EDI] [EFLAGS]
+    
+    *--stack = (uint32_t)entry_point; // Return Address (EIP)
+    *--stack = 0;                     // EBP
+    *--stack = 0;                     // EBX
+    *--stack = 0;                     // ESI
+    *--stack = 0;                     // EDI
+    *--stack = 0x202;                 // EFLAGS (Interrupts Enabled)
+    
+    return stack;
+}
+
 process_t *process_create(const char *name, void (*entry_point)(void)) {
     process_t *proc = (process_t *)memory_alloc(sizeof(process_t));
     if (!proc) return NULL;
@@ -28,15 +47,30 @@ process_t *process_create(const char *name, void (*entry_point)(void)) {
     proc->name[len] = 0;
     
     proc->state = PROCESS_STATE_READY;
-    proc->eip = (uint32_t)entry_point;
     
-    // Stack and Context setup would happen here
-    // For now, we assume cooperative or same-stack for simple apps
+    // Allocate 4KB Stack
+    void *stack_addr = memory_alloc(4096);
+    if (!stack_addr) {
+        // memory_free(proc);
+        return NULL;
+    }
     
-    proc->next = process_list;
-    process_list = proc;
+    // Stack grows down, so base is at the end
+    void *stack_top = (void*)((uint32_t)stack_addr + 4096);
+    proc->esp = (uint32_t)prepare_stack(stack_top, entry_point);
     
-    console_log("[INFO] Process Created: ");
+    proc->next = NULL;
+
+    // Append to list (Round Robin)
+    if (!process_list) {
+        process_list = proc;
+    } else {
+        process_t *p = process_list;
+        while (p->next) p = p->next;
+        p->next = proc;
+    }
+    
+    console_log("[INFO] Thread Created: ");
     console_log(proc->name);
     console_log("\n");
     
@@ -45,38 +79,77 @@ process_t *process_create(const char *name, void (*entry_point)(void)) {
 
 #include "elf.h"
 process_t *process_create_elf(const char *name, const char *filename) {
-    uint32_t entry_point = elf_load_file(filename);
-    if (entry_point == 0) {
-        console_log("[PROCESS] Failed to load ELF: ");
-        console_log(filename);
-        console_log("\n");
-        return NULL;
-    }
-    
-    // Create generic process with this entry point
-    return process_create(name, (void (*)(void))entry_point);
+    // ... ELF Loading Logic remains, but typically it would load into a separate address space ...
+    // For now, we reuse the basic thread creation for simplicity if ELF supported shared memory or we were using a flat model.
+    // In this "Simple Multithreading" generic step, we focus on in-kernel function threads (Command Handlers).
+    return NULL; 
 }
 
 void process_schedule(void) {
-    // Round Robin Stub
     if (!process_list) return;
     
+    // If no current process, pick the first one (Bootstrap)
     if (!current_process) {
         current_process = process_list;
-    } else {
-        current_process = current_process->next;
-        if (!current_process) current_process = process_list;
+        // Should logically already be running if we are here? 
+        // Or we are switching FROM init.
     }
     
-    if (current_process && current_process->state == PROCESS_STATE_READY) {
-        current_process->state = PROCESS_STATE_RUNNING;
-        // Context switch would happen here
-    }
+    process_t *next = current_process->next;
+    if (!next) next = process_list; // Loop Loop
+    
+    if (next == current_process) return; // Only 1 task
+    
+    process_t *prev = current_process;
+    current_process = next;
+    
+    current_process->state = PROCESS_STATE_RUNNING;
+    
+    // Context Switch
+    switch_task(&next->esp, &prev->esp);
+}
+
+// Yield current time slice
+void process_yield(void) {
+    process_schedule();
 }
 
 void process_exit(void) {
-    if (current_process) {
-        current_process->state = PROCESS_STATE_TERMINATED;
-        process_schedule();
+    // Deschedule self
+    if (!current_process) return;
+    
+    current_process->state = PROCESS_STATE_TERMINATED;
+    
+    // Remove from list
+    // Simple remove logic (O(N))
+    if (process_list == current_process) {
+        process_list = current_process->next;
+    } else {
+        process_t *p = process_list;
+        while (p && p->next != current_process) p = p->next;
+        if (p) p->next = current_process->next;
     }
+    
+    console_log("[INFO] Process Exited\n");
+    
+    // Force switch effectively (never returns here)
+    process_schedule();
+    
+    // If no processes left, halt
+    while(1);
+}
+
+// Called by Kernel Main to convert the main thread into Task 0
+void process_init_main_thread(void) {
+    process_init();
+    
+    // Manually create PCB for current running context
+    process_t *proc = (process_t *)memory_alloc(sizeof(process_t));
+    proc->pid = 0;
+    strcpy(proc->name, "Kernel/GUI");
+    proc->state = PROCESS_STATE_RUNNING;
+    proc->next = NULL;
+    
+    process_list = proc;
+    current_process = proc;
 }

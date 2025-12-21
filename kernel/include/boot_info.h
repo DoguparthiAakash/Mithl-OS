@@ -22,6 +22,13 @@ typedef struct {
     uint8_t  bpp;
 } boot_framebuffer_t;
 
+typedef struct {
+    uint32_t mod_start;
+    uint32_t mod_end;
+    char* string; // Cmdline / Name
+    uint32_t reserved;
+} boot_module_t;
+
 // Unified Boot Info Structure
 typedef struct {
     // Memory Map
@@ -31,9 +38,11 @@ typedef struct {
     // Framebuffer
     boot_framebuffer_t framebuffer;
     
+#define MAX_BOOT_MODULES 10
+
     // Modules (Initrd, etc.)
     uint32_t mod_count;
-    void* mod_addr; // Keep raw for now, or parse if needed
+    boot_module_t modules[MAX_BOOT_MODULES];
     
     // Boot Loader Name
     const char* bootloader_name;

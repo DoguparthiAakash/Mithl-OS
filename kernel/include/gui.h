@@ -91,12 +91,15 @@ typedef struct
 } gui_event_t;
 
 
+#define GUI_FLAG_HIDDEN (1 << 0)
+
 /* Base GUI Element structure */
 typedef struct gui_element
 {
     gui_element_type_t type;
     gui_state_t state;
     rect_t bounds;
+    uint32_t flags; // New flags field
     uint32_t background_color;
     uint32_t border_color;
     uint32_t text_color;

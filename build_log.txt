@@ -1,0 +1,223 @@
+gcc -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Wall -Wextra -mno-sse -mno-sse2 -mno-mmx -mno-80387 -I./kernel/include -I./kernel -I./kernel/include/libc_shim -I./games/DOOM-master/linuxdoom-1.10 -DDOOM_MITHL -DNORMALUNIX=1 -DLINUX=1 -std=gnu89 -c kernel/apps/doom/i_mithl.c -o kernel/apps/doom/i_mithl.o
+In file included from kernel/apps/doom/i_mithl.c:24:
+./kernel/include/keyboard.h:22:9: warning: ‘KEY_MINUS’ redefined
+   22 | #define KEY_MINUS 0x0C
+      |         ^~~~~~~~~
+In file included from kernel/apps/doom/i_mithl.c:1:
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:274:9: note: this is the location of the previous definition
+  274 | #define KEY_MINUS       0x2d
+      |         ^~~~~~~~~
+./kernel/include/keyboard.h:23:9: warning: ‘KEY_EQUALS’ redefined
+   23 | #define KEY_EQUALS 0x0D
+      |         ^~~~~~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:273:9: note: this is the location of the previous definition
+  273 | #define KEY_EQUALS      0x3d
+      |         ^~~~~~~~~~
+./kernel/include/keyboard.h:24:9: warning: ‘KEY_BACKSPACE’ redefined
+   24 | #define KEY_BACKSPACE 0x0E
+      |         ^~~~~~~~~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:270:9: note: this is the location of the previous definition
+  270 | #define KEY_BACKSPACE   127
+      |         ^~~~~~~~~~~~~
+./kernel/include/keyboard.h:25:9: warning: ‘KEY_TAB’ redefined
+   25 | #define KEY_TAB 0x0F
+      |         ^~~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:256:9: note: this is the location of the previous definition
+  256 | #define KEY_TAB         9
+      |         ^~~~~~~
+./kernel/include/keyboard.h:38:9: warning: ‘KEY_ENTER’ redefined
+   38 | #define KEY_ENTER 0x1C
+      |         ^~~~~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:255:9: note: this is the location of the previous definition
+  255 | #define KEY_ENTER       13
+      |         ^~~~~~~~~
+./kernel/include/keyboard.h:64:9: warning: ‘KEY_RSHIFT’ redefined
+   64 | #define KEY_RSHIFT 0x36
+      |         ^~~~~~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:276:9: note: this is the location of the previous definition
+  276 | #define KEY_RSHIFT      (0x80+0x36)
+      |         ^~~~~~~~~~
+./kernel/include/keyboard.h:66:9: warning: ‘KEY_LALT’ redefined
+   66 | #define KEY_LALT 0x38
+      |         ^~~~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:280:9: note: this is the location of the previous definition
+  280 | #define KEY_LALT        KEY_RALT
+      |         ^~~~~~~~
+./kernel/include/keyboard.h:69:9: warning: ‘KEY_F1’ redefined
+   69 | #define KEY_F1 0x3B
+      |         ^~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:257:9: note: this is the location of the previous definition
+  257 | #define KEY_F1          (0x80+0x3b)
+      |         ^~~~~~
+./kernel/include/keyboard.h:70:9: warning: ‘KEY_F2’ redefined
+   70 | #define KEY_F2 0x3C
+      |         ^~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:258:9: note: this is the location of the previous definition
+  258 | #define KEY_F2          (0x80+0x3c)
+      |         ^~~~~~
+./kernel/include/keyboard.h:71:9: warning: ‘KEY_F3’ redefined
+   71 | #define KEY_F3 0x3D
+      |         ^~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:259:9: note: this is the location of the previous definition
+  259 | #define KEY_F3          (0x80+0x3d)
+      |         ^~~~~~
+./kernel/include/keyboard.h:72:9: warning: ‘KEY_F4’ redefined
+   72 | #define KEY_F4 0x3E
+      |         ^~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:260:9: note: this is the location of the previous definition
+  260 | #define KEY_F4          (0x80+0x3e)
+      |         ^~~~~~
+./kernel/include/keyboard.h:73:9: warning: ‘KEY_F5’ redefined
+   73 | #define KEY_F5 0x3F
+      |         ^~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:261:9: note: this is the location of the previous definition
+  261 | #define KEY_F5          (0x80+0x3f)
+      |         ^~~~~~
+./kernel/include/keyboard.h:74:9: warning: ‘KEY_F6’ redefined
+   74 | #define KEY_F6 0x40
+      |         ^~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:262:9: note: this is the location of the previous definition
+  262 | #define KEY_F6          (0x80+0x40)
+      |         ^~~~~~
+./kernel/include/keyboard.h:75:9: warning: ‘KEY_F7’ redefined
+   75 | #define KEY_F7 0x41
+      |         ^~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:263:9: note: this is the location of the previous definition
+  263 | #define KEY_F7          (0x80+0x41)
+      |         ^~~~~~
+./kernel/include/keyboard.h:76:9: warning: ‘KEY_F8’ redefined
+   76 | #define KEY_F8 0x42
+      |         ^~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:264:9: note: this is the location of the previous definition
+  264 | #define KEY_F8          (0x80+0x42)
+      |         ^~~~~~
+./kernel/include/keyboard.h:77:9: warning: ‘KEY_F9’ redefined
+   77 | #define KEY_F9 0x43
+      |         ^~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:265:9: note: this is the location of the previous definition
+  265 | #define KEY_F9          (0x80+0x43)
+      |         ^~~~~~
+./kernel/include/keyboard.h:78:9: warning: ‘KEY_F10’ redefined
+   78 | #define KEY_F10 0x44
+      |         ^~~~~~~
+./games/DOOM-master/linuxdoom-1.10/doomdef.h:266:9: note: this is the location of the previous definition
+  266 | #define KEY_F10         (0x80+0x44)
+      |         ^~~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_GetTime’:
+kernel/apps/doom/i_mithl.c:53:12: warning: implicit declaration of function ‘rtc_get_seconds’ [-Wimplicit-function-declaration]
+   53 |     return rtc_get_seconds() * 35; // Slow down a bit? Standard is 35fps or 70Hz tick
+      |            ^~~~~~~~~~~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_Tactile’:
+kernel/apps/doom/i_mithl.c:73:21: warning: unused parameter ‘on’ [-Wunused-parameter]
+   73 | void I_Tactile (int on, int off, int total) { }
+      |                 ~~~~^~
+kernel/apps/doom/i_mithl.c:73:29: warning: unused parameter ‘off’ [-Wunused-parameter]
+   73 | void I_Tactile (int on, int off, int total) { }
+      |                         ~~~~^~~
+kernel/apps/doom/i_mithl.c:73:38: warning: unused parameter ‘total’ [-Wunused-parameter]
+   73 | void I_Tactile (int on, int off, int total) { }
+      |                                  ~~~~^~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_WaitVBL’:
+kernel/apps/doom/i_mithl.c:75:5: error: ‘for’ loop initial declarations are only allowed in C99 or C11 mode
+   75 |     for(volatile int i=0; i<count*100000; i++);
+      |     ^~~
+kernel/apps/doom/i_mithl.c:75:5: note: use option ‘-std=c99’, ‘-std=gnu99’, ‘-std=c11’ or ‘-std=gnu11’ to compile your code
+kernel/apps/doom/i_mithl.c: In function ‘I_SetPalette’:
+kernel/apps/doom/i_mithl.c:94:5: error: ‘for’ loop initial declarations are only allowed in C99 or C11 mode
+   94 |     for (int i = 0; i < 256; i++) {
+      |     ^~~
+kernel/apps/doom/i_mithl.c: In function ‘I_FinishUpdate’:
+kernel/apps/doom/i_mithl.c:131:5: error: ‘for’ loop initial declarations are only allowed in C99 or C11 mode
+  131 |     for (int y = 0; y < doom_h; y++) {
+      |     ^~~
+kernel/apps/doom/i_mithl.c:132:9: error: ‘for’ loop initial declarations are only allowed in C99 or C11 mode
+  132 |         for (int x = 0; x < doom_w; x++) {
+      |         ^~~
+kernel/apps/doom/i_mithl.c:136:13: warning: implicit declaration of function ‘draw_rect_fill’; did you mean ‘draw_rect_filled’? [-Wimplicit-function-declaration]
+  136 |             draw_rect_fill(offset_x + x*scale, offset_y + y*scale, scale, scale, color);
+      |             ^~~~~~~~~~~~~~
+      |             draw_rect_filled
+kernel/apps/doom/i_mithl.c: In function ‘I_PlaySong’:
+kernel/apps/doom/i_mithl.c:167:21: warning: unused parameter ‘handle’ [-Wunused-parameter]
+  167 | void I_PlaySong(int handle, int looping) {}
+      |                 ~~~~^~~~~~
+kernel/apps/doom/i_mithl.c:167:33: warning: unused parameter ‘looping’ [-Wunused-parameter]
+  167 | void I_PlaySong(int handle, int looping) {}
+      |                             ~~~~^~~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_PauseSong’:
+kernel/apps/doom/i_mithl.c:168:22: warning: unused parameter ‘handle’ [-Wunused-parameter]
+  168 | void I_PauseSong(int handle) {}
+      |                  ~~~~^~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_ResumeSong’:
+kernel/apps/doom/i_mithl.c:169:23: warning: unused parameter ‘handle’ [-Wunused-parameter]
+  169 | void I_ResumeSong(int handle) {}
+      |                   ~~~~^~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_StopSong’:
+kernel/apps/doom/i_mithl.c:170:21: warning: unused parameter ‘handle’ [-Wunused-parameter]
+  170 | void I_StopSong(int handle) {}
+      |                 ~~~~^~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_UnRegisterSong’:
+kernel/apps/doom/i_mithl.c:171:27: warning: unused parameter ‘handle’ [-Wunused-parameter]
+  171 | void I_UnRegisterSong(int handle) {}
+      |                       ~~~~^~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_RegisterSong’:
+kernel/apps/doom/i_mithl.c:172:26: warning: unused parameter ‘data’ [-Wunused-parameter]
+  172 | int I_RegisterSong(void *data) { return 1; }
+      |                    ~~~~~~^~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_QrySongPlaying’:
+kernel/apps/doom/i_mithl.c:173:26: warning: unused parameter ‘handle’ [-Wunused-parameter]
+  173 | int I_QrySongPlaying(int handle) { return 0; }
+      |                      ~~~~^~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_GetSfxLumpNum’:
+kernel/apps/doom/i_mithl.c:174:44: warning: unused parameter ‘sfx’ [-Wunused-parameter]
+  174 | int I_GetSfxLumpNum(struct sfxinfo_struct *sfx) { return 0; }
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~^~~
+kernel/apps/doom/i_mithl.c: At top level:
+kernel/apps/doom/i_mithl.c:175:5: error: conflicting types for ‘I_StartSound’; have ‘int(int,  int,  int,  int,  int,  int)’
+  175 | int I_StartSound(int id, int sing, int vol, int sep, int pitch, int pri) { return 0; }
+      |     ^~~~~~~~~~~~
+In file included from kernel/apps/doom/i_mithl.c:5:
+./games/DOOM-master/linuxdoom-1.10/i_sound.h:64:1: note: previous declaration of ‘I_StartSound’ with type ‘int(int,  int,  int,  int,  int)’
+   64 | I_StartSound
+      | ^~~~~~~~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_StartSound’:
+kernel/apps/doom/i_mithl.c:175:22: warning: unused parameter ‘id’ [-Wunused-parameter]
+  175 | int I_StartSound(int id, int sing, int vol, int sep, int pitch, int pri) { return 0; }
+      |                  ~~~~^~
+kernel/apps/doom/i_mithl.c:175:30: warning: unused parameter ‘sing’ [-Wunused-parameter]
+  175 | int I_StartSound(int id, int sing, int vol, int sep, int pitch, int pri) { return 0; }
+      |                          ~~~~^~~~
+kernel/apps/doom/i_mithl.c:175:40: warning: unused parameter ‘vol’ [-Wunused-parameter]
+  175 | int I_StartSound(int id, int sing, int vol, int sep, int pitch, int pri) { return 0; }
+      |                                    ~~~~^~~
+kernel/apps/doom/i_mithl.c:175:49: warning: unused parameter ‘sep’ [-Wunused-parameter]
+  175 | int I_StartSound(int id, int sing, int vol, int sep, int pitch, int pri) { return 0; }
+      |                                             ~~~~^~~
+kernel/apps/doom/i_mithl.c:175:58: warning: unused parameter ‘pitch’ [-Wunused-parameter]
+  175 | int I_StartSound(int id, int sing, int vol, int sep, int pitch, int pri) { return 0; }
+      |                                                      ~~~~^~~~~
+kernel/apps/doom/i_mithl.c:175:69: warning: unused parameter ‘pri’ [-Wunused-parameter]
+  175 | int I_StartSound(int id, int sing, int vol, int sep, int pitch, int pri) { return 0; }
+      |                                                                 ~~~~^~~
+kernel/apps/doom/i_mithl.c: In function ‘I_StopSound’:
+kernel/apps/doom/i_mithl.c:176:22: warning: unused parameter ‘handle’ [-Wunused-parameter]
+  176 | void I_StopSound(int handle) {}
+      |                  ~~~~^~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_SoundIsPlaying’:
+kernel/apps/doom/i_mithl.c:177:26: warning: unused parameter ‘handle’ [-Wunused-parameter]
+  177 | int I_SoundIsPlaying(int handle) { return 0; }
+      |                      ~~~~^~~~~~
+kernel/apps/doom/i_mithl.c: In function ‘I_UpdateSoundParams’:
+kernel/apps/doom/i_mithl.c:178:30: warning: unused parameter ‘handle’ [-Wunused-parameter]
+  178 | void I_UpdateSoundParams(int handle, int vol, int sep, int pitch) {}
+      |                          ~~~~^~~~~~
+kernel/apps/doom/i_mithl.c:178:42: warning: unused parameter ‘vol’ [-Wunused-parameter]
+  178 | void I_UpdateSoundParams(int handle, int vol, int sep, int pitch) {}
+      |                                      ~~~~^~~
+kernel/apps/doom/i_mithl.c:178:51: warning: unused parameter ‘sep’ [-Wunused-parameter]
+  178 | void I_UpdateSoundParams(int handle, int vol, int sep, int pitch) {}
+      |                                               ~~~~^~~
+kernel/apps/doom/i_mithl.c:178:60: warning: unused parameter ‘pitch’ [-Wunused-parameter]
+  178 | void I_UpdateSoundParams(int handle, int vol, int sep, int pitch) {}
+      |                                                        ~~~~^~~~~
+make: *** [Makefile:135: kernel/apps/doom/i_mithl.o] Error 1

@@ -63,6 +63,7 @@ void graphics_set_clip(rect_t rect);
 void draw_pixel(int x, int y, uint32_t color);
 void draw_line(int x1, int y1, int x2, int y2, uint32_t color);
 void draw_rect(rect_t rect, uint32_t color);
+void draw_rect_outline(int x, int y, int width, int height, uint32_t color);
 void draw_round_rect(rect_t rect, int radius, uint32_t color);
 void draw_rect_filled(rect_t rect, uint32_t color);
 void draw_circle(int x, int y, int radius, uint32_t color);

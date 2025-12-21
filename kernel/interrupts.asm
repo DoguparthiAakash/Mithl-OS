@@ -57,7 +57,66 @@ ISR_NOERRCODE 29
 ISR_NOERRCODE 30
 ISR_NOERRCODE 31
 
+; IRQ0 (Timer)
+global irq0
+irq0:
+    cli
+    push 0
+    push 32
+    jmp irq_common_stub
+
+irq_common_stub:
+    pusha
+    
+    mov ax, ds
+    push eax
+    
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    
+    ; Call C handler directly for IRQ0
+    extern timer_handler
+    call timer_handler
+    
+    pop eax
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    
+    popa
+    add esp, 8
+    sti
+    iret
+
 isr_common_stub:
+    pusha           ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
+    mov ax, ds
+    push eax        ; Save the data segment descriptor
+    
+    mov ax, 0x10    ; Load the kernel data segment descriptor
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    
+    push esp        ; Push pointer to stack
+    call isr_handler
+    add esp, 4      ; Cleanup stack pointer arg
+    
+    pop eax         ; Reload original data segment descriptor
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    
+    popa            ; Pops edi,esi,ebp...
+    add esp, 8      ; Cleans up the pushed error code and pushed ISR number
+    sti
+    iret            ; Pops CS, EIP, EFLAGS, SS, ESP
     pusha           ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
     mov ax, ds
     push eax        ; Save the data segment descriptor

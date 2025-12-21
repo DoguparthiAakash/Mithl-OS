@@ -156,7 +156,7 @@ void desktop_root_handler(gui_element_t *element, gui_event_t *event) {
 
         // 2. Dock Icons (Center Bottom)
         // Constants matching draw_dock
-        int num_icons = 5;
+        int num_icons = 6;
         int icon_size = 48;
         int pad = 16;
         int dock_w = num_icons * (icon_size + pad) + pad;
@@ -172,7 +172,7 @@ void desktop_root_handler(gui_element_t *element, gui_event_t *event) {
             int icon_index = relative_x / (icon_size + pad);
             int remainder = relative_x % (icon_size + pad);
             
-            if (icon_index >= 0 && icon_index < 5 && remainder <= icon_size) {
+            if (icon_index >= 0 && icon_index < num_icons && remainder <= icon_size) {
                  // Valid Click on Icon i
                  selected_icon = icon_index;
                  
@@ -190,6 +190,11 @@ void desktop_root_handler(gui_element_t *element, gui_event_t *event) {
                  }
                  else if (selected_icon == 4) {
                      settings_show();
+                 }
+                 else if (selected_icon == 5) {
+                     // Launch Doom
+                     terminal_show();
+                     terminal_run_command_active("doom");
                  }
                  
                  gui_mgr.needs_redraw = 1;
@@ -313,11 +318,14 @@ void draw_top_bar(rect_t clip) {
     draw_line(wifi_x-4, 8, wifi_x+12, 8, 0xFF505050); // Top
 }
 
+// desktop_draw_rect moved to bottom
+
+
 void draw_dock(rect_t clip) {
     (void)clip; 
     
-    // Floating Dock at bottom, wider for 5 icons
-    int num_icons = 5;
+    // Floating Dock at bottom, wider for 6 icons (Doom added)
+    int num_icons = 6;
     int icon_size = 48;
     int pad = 16;
     int dock_w = num_icons * (icon_size + pad) + pad;
@@ -363,6 +371,8 @@ void draw_dock(rect_t clip) {
     draw_icon(start_x + 2*(icon_size+pad), yp, icon_app_terminal);
     draw_icon(start_x + 3*(icon_size+pad), yp, icon_app_notepad);
     draw_icon(start_x + 4*(icon_size+pad), yp, icon_app_settings);
+    // Doom Icon (Reusing Terminal icon for now, user requested icon)
+    draw_icon(start_x + 5*(icon_size+pad), yp, icon_app_doom); 
 }
 
 void draw_icons(void) {
@@ -472,7 +482,7 @@ void draw_taskbar(void) {
 // --- Bubble UI Constants ---
 // Dock is centered. Bubbles are to the left and right.
 static int get_dock_rect(rect_t *r) {
-    int num_icons = 5;
+    int num_icons = 6;
     int icon_size = 48;
     int pad = 16;
     int dock_w = num_icons * (icon_size + pad) + pad;
@@ -757,10 +767,12 @@ static void draw_status_bubble(void) {
 void desktop_draw_rect(int x, int y, int w, int h) {
     (void)x; (void)y; (void)w; (void)h;
     
-    graphics_draw_image(0, 0, 1024, 768, wallpaper_data);
+    // FIX: Clear buffer with solid color first to prevent transparency artifacts ("Hall of Mirrors")
+    // When windows move, the old position needs to be erased. Since wallpaper might have transparency
+    // or the previous buffer contents are preserved, we must clear it.
+    draw_rect_filled((rect_t){0, 0, 1024, 768}, 0xFF000000);
     
-    // 3. Top Bar Removed
-    // draw_top_bar(gui_mgr.dirty_rect);
+    graphics_draw_image(0, 0, 1024, 768, wallpaper_data);
     
     // 4. Dock Overlap
     draw_dock(gui_mgr.dirty_rect);

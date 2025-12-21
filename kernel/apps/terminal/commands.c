@@ -3,6 +3,8 @@
 #include "string.h"
 #include "memory.h"
 #include "vfs.h"
+#include "process.h"
+#include "gui.h"
 
 /* External functions */
 extern void shutdown_system(void);
@@ -15,6 +17,44 @@ static char current_dir[256] = "/home/aakash";
 
 const char* get_current_dir(void) {
     return current_dir;
+}
+
+// Doom Externs
+extern void D_DoomMain(void);
+extern int myargc;
+extern char** myargv;
+
+extern process_t *process_create(const char *name, void (*entry_point)(void));
+// Doom Externs
+extern void doom_assign_window(gui_window_t *w);
+extern void doom_draw(gui_renderer_t *renderer, gui_element_t *element);
+extern void D_DoomMain(void);
+
+void cmd_doom(terminal_t *term, const char *args) {
+    terminal_print(term, "Starting DOOM via Multitasking...\n");
+    
+    // 1. Create Window (Main Thread)
+    // 320x200 * 2 = 640x400 + decorations
+    gui_window_t *win = gui_create_window("DOOM v1.1", 100, 100, 660, 450);
+    
+    // 2. Override Draw Handler
+    if (win) {
+         win->base.draw = doom_draw; // doom_draw is thread-safe-ish (reads buffer)
+         doom_assign_window(win);
+         
+         // Set black background initially
+         win->base.background_color = 0xFF000000;
+    }
+
+    // Set global args for Doom
+    static char *doom_args[5];
+    doom_args[0] = "doom";
+    
+    myargc = 1;
+    myargv = doom_args;
+    
+    // 3. Spawn Doom Thread
+    process_create("Doom", D_DoomMain);
 }
 
 /* Helper: String starts with */
@@ -574,6 +614,7 @@ static const command_t commands[] = {
     {"cd", cmd_cd, "Change directory"},
     {"pwd", cmd_pwd, "Print working directory"},
     {"cat", cmd_cat, "Concatenate and display file content"},
+    {"doom", cmd_doom, "Run DOOM (IDKFA)"},
 
     {NULL, NULL, NULL} // Sentinel
 };

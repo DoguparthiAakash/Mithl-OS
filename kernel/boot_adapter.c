@@ -120,6 +120,17 @@ static void parse_multiboot2(unsigned long addr, boot_info_t* info) {
                 info->acpi_rsdp = (uintptr_t)acpi->rsdp;
                 break;
             }
+            
+            case MULTIBOOT_TAG_TYPE_MODULE: {
+                multiboot_tag_module_t *mod = (multiboot_tag_module_t *)tag;
+                if (info->mod_count < MAX_BOOT_MODULES) {
+                    boot_module_t* m = &info->modules[info->mod_count++];
+                    m->mod_start = mod->mod_start;
+                    m->mod_end = mod->mod_end;
+                    m->string = (char*)mod->string;
+                }
+                break;
+            }
              
 
         }

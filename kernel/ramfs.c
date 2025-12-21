@@ -1,5 +1,6 @@
 #include "vfs.h"
 #include "string.h"
+#include "console.h"
 #include "memory.h"
 #include "list.h" 
 
@@ -259,4 +260,46 @@ void ramfs_init_clean(void) {
     fs_node_t *etc = ramfs_create_dir("etc");
     ramfs_add_child(fs_root, etc);
     ramfs_add_child(etc, ramfs_create_file("hostname", "mithl-os"));
+}
+#include "boot_info.h"
+
+// Load Multiboot Modules into / (root)
+void ramfs_load_modules(boot_info_t *info) {
+    if (!info) return;
+    
+    console_write("[RAMFS] Loading Modules...\n");
+    
+    for (uint32_t i = 0; i < info->mod_count; i++) {
+        boot_module_t *mod = &info->modules[i];
+        
+        char *name = mod->string;
+        if (!name || !*name) name = "module.bin";
+        
+        // Extract filename from path if needed (e.g. /modules/doom.wad -> doom.wad)
+        char *basename = name;
+        for (char *c = name; *c; c++) {
+            if (*c == '/') basename = c + 1;
+        }
+        
+        // Create file
+        uint32_t size = mod->mod_end - mod->mod_start;
+        // Optimization: Don't copy, just point to module location? 
+        // For simplicity/safety, we COPY because modules might be reclaimed if we use PMM poorly.
+        // But our PMM is dumb, so it might mark used.
+        // Let's alloc and copy to be safe in `ramfs_create_file`.
+        // Wait, `ramfs_create_file` takes a string content. We need binary support.
+        
+        fs_node_t *node = allocate_node(basename, FS_FILE);
+        char *buf = (char*)memory_alloc(size);
+        memcpy(buf, (void*)mod->mod_start, size);
+        
+        node->length = size;
+        node->impl = (uint32_t)buf;
+        
+        ramfs_add_child(fs_root, node);
+        
+        console_write("  Loaded: ");
+        console_write(basename);
+        console_write("\n");
+    }
 }

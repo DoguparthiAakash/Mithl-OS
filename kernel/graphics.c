@@ -233,15 +233,15 @@ void draw_line(int x1, int y1, int x2, int y2, uint32_t color)
     }
 }
 
-void draw_rect(rect_t rect, uint32_t color)
-{
-    int x1 = rect.x, y1 = rect.y;
-    int x2 = rect.x + rect.width - 1, y2 = rect.y + rect.height - 1;
-    
-    draw_line(x1, y1, x2, y1, color); // Top
-    draw_line(x2, y1, x2, y2, color); // Right
-    draw_line(x2, y2, x1, y2, color); // Bottom
-    draw_line(x1, y2, x1, y1, color); // Left
+void draw_rect_outline(int x, int y, int width, int height, uint32_t color) {
+    draw_rect_filled((rect_t){x, y, width, 1}, color);            // Top
+    draw_rect_filled((rect_t){x, y + height - 1, width, 1}, color); // Bottom
+    draw_rect_filled((rect_t){x, y, 1, height}, color);             // Left
+    draw_rect_filled((rect_t){x + width - 1, y, 1, height}, color); // Right
+}
+
+void draw_rect(rect_t rect, uint32_t color) {
+    draw_rect_filled(rect, color);
 }
 
 // Simple rounded rect implementation

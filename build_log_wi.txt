@@ -1,0 +1,490 @@
+gcc -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Wall -Wextra -mno-sse -mno-sse2 -mno-mmx -mno-80387 -I./kernel/include -I./kernel -I./kernel/include/libc_shim -I./games/DOOM-master/linuxdoom-1.10 -DDOOM_MITHL -DNORMALUNIX=1 -DLINUX=1 -std=gnu89 -c games/DOOM-master/linuxdoom-1.10/wi_stuff.c -o games/DOOM-master/linuxdoom-1.10/wi_stuff.o
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:127:3: error: conflicting types for ‘point_t’; have ‘struct <anonymous>’
+  127 | } point_t;
+      |   ^~~~~~~
+In file included from ./kernel/include/console.h:3,
+                 from ./kernel/include/libc_shim/stdio.h:4,
+                 from games/DOOM-master/linuxdoom-1.10/wi_stuff.c:27:
+./kernel/include/types.h:17:3: note: previous declaration of ‘point_t’ with type ‘point_t’
+   17 | } point_t;
+      |   ^~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:228:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  228 |     { ANIM_ALWAYS, TICRATE/3, 3, { 224, 104 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:229:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  229 |     { ANIM_ALWAYS, TICRATE/3, 3, { 184, 160 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:230:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  230 |     { ANIM_ALWAYS, TICRATE/3, 3, { 112, 136 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:231:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  231 |     { ANIM_ALWAYS, TICRATE/3, 3, { 72, 112 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:232:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  232 |     { ANIM_ALWAYS, TICRATE/3, 3, { 88, 96 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:233:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  233 |     { ANIM_ALWAYS, TICRATE/3, 3, { 64, 48 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:234:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  234 |     { ANIM_ALWAYS, TICRATE/3, 3, { 192, 40 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:235:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  235 |     { ANIM_ALWAYS, TICRATE/3, 3, { 136, 16 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:236:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  236 |     { ANIM_ALWAYS, TICRATE/3, 3, { 80, 16 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:237:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  237 |     { ANIM_ALWAYS, TICRATE/3, 3, { 64, 24 } }
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:242:5: warning: missing initializer for field ‘data2’ of ‘anim_t’ [-Wmissing-field-initializers]
+  242 |     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 1 },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:155:17: note: ‘data2’ declared here
+  155 |     int         data2;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:243:5: warning: missing initializer for field ‘data2’ of ‘anim_t’ [-Wmissing-field-initializers]
+  243 |     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 2 },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:155:17: note: ‘data2’ declared here
+  155 |     int         data2;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:244:5: warning: missing initializer for field ‘data2’ of ‘anim_t’ [-Wmissing-field-initializers]
+  244 |     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 3 },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:155:17: note: ‘data2’ declared here
+  155 |     int         data2;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:245:5: warning: missing initializer for field ‘data2’ of ‘anim_t’ [-Wmissing-field-initializers]
+  245 |     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 4 },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:155:17: note: ‘data2’ declared here
+  155 |     int         data2;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:246:5: warning: missing initializer for field ‘data2’ of ‘anim_t’ [-Wmissing-field-initializers]
+  246 |     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 5 },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:155:17: note: ‘data2’ declared here
+  155 |     int         data2;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:247:5: warning: missing initializer for field ‘data2’ of ‘anim_t’ [-Wmissing-field-initializers]
+  247 |     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 6 },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:155:17: note: ‘data2’ declared here
+  155 |     int         data2;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:248:5: warning: missing initializer for field ‘data2’ of ‘anim_t’ [-Wmissing-field-initializers]
+  248 |     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 7 },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:155:17: note: ‘data2’ declared here
+  155 |     int         data2;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:249:5: warning: missing initializer for field ‘data2’ of ‘anim_t’ [-Wmissing-field-initializers]
+  249 |     { ANIM_LEVEL, TICRATE/3, 3, { 192, 144 }, 8 },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:155:17: note: ‘data2’ declared here
+  155 |     int         data2;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:250:5: warning: missing initializer for field ‘data2’ of ‘anim_t’ [-Wmissing-field-initializers]
+  250 |     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 8 }
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:155:17: note: ‘data2’ declared here
+  155 |     int         data2;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:255:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  255 |     { ANIM_ALWAYS, TICRATE/3, 3, { 104, 168 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:256:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  256 |     { ANIM_ALWAYS, TICRATE/3, 3, { 40, 136 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:257:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  257 |     { ANIM_ALWAYS, TICRATE/3, 3, { 160, 96 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:258:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  258 |     { ANIM_ALWAYS, TICRATE/3, 3, { 104, 80 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:259:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  259 |     { ANIM_ALWAYS, TICRATE/3, 3, { 120, 32 } },
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:260:5: warning: missing initializer for field ‘data1’ of ‘anim_t’ [-Wmissing-field-initializers]
+  260 |     { ANIM_ALWAYS, TICRATE/4, 3, { 40, 0 } }
+      |     ^
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:150:17: note: ‘data1’ declared here
+  150 |     int         data1;
+      |                 ^~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c: In function ‘WI_Responder’:
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:414:31: warning: unused parameter ‘ev’ [-Wunused-parameter]
+  414 | boolean WI_Responder(event_t* ev)
+      |                      ~~~~~~~~~^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c: In function ‘WI_drawOnLnode’:
+./kernel/include/libc_shim/stdio.h:18:16: warning: implicit declaration of function ‘console_write_args’; did you mean ‘console_write_len’? [-Wimplicit-function-declaration]
+   18 | #define printf console_write_args
+      |                ^~~~~~~~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:497:9: note: in expansion of macro ‘printf’
+  497 |         printf("Could not place patch on level %d", n+1);
+      |         ^~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c: In function ‘WI_drawDeathmatchStats’:
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:990:17: warning: variable ‘lh’ set but not used [-Wunused-but-set-variable]
+  990 |     int         lh;     // line height
+      |                 ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c: In function ‘WI_loadData’:
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1548:9: warning: implicit declaration of function ‘sprintf’ [-Wimplicit-function-declaration]
+ 1548 |         sprintf(name, "WIMAP%d", wbs->epsd);
+      |         ^~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:52:1: note: ‘sprintf’ is defined in header ‘<stdio.h>’; this is probably fixable by adding ‘#include <stdio.h>’
+   51 | #include "wi_stuff.h"
+  +++ |+#include <stdio.h>
+   52 | 
+In file included from games/DOOM-master/linuxdoom-1.10/wi_stuff.c:29:
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c: In function ‘WI_unloadData’:
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1713:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1713 |     Z_ChangeTag(wiminus, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1713:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1713 |     Z_ChangeTag(wiminus, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1716:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1716 |         Z_ChangeTag(num[i], PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1716:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1716 |         Z_ChangeTag(num[i], PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1721:13: note: in expansion of macro ‘Z_ChangeTag’
+ 1721 |             Z_ChangeTag(lnames[i], PU_CACHE);
+      |             ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1721:13: note: in expansion of macro ‘Z_ChangeTag’
+ 1721 |             Z_ChangeTag(lnames[i], PU_CACHE);
+      |             ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1725:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1725 |         Z_ChangeTag(yah[0], PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1725:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1725 |         Z_ChangeTag(yah[0], PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1726:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1726 |         Z_ChangeTag(yah[1], PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1726:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1726 |         Z_ChangeTag(yah[1], PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1728:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1728 |         Z_ChangeTag(splat, PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1728:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1728 |         Z_ChangeTag(splat, PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1731:13: note: in expansion of macro ‘Z_ChangeTag’
+ 1731 |             Z_ChangeTag(lnames[i], PU_CACHE);
+      |             ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1731:13: note: in expansion of macro ‘Z_ChangeTag’
+ 1731 |             Z_ChangeTag(lnames[i], PU_CACHE);
+      |             ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1739:25: note: in expansion of macro ‘Z_ChangeTag’
+ 1739 |                         Z_ChangeTag(anims[wbs->epsd][j].p[i], PU_CACHE);
+      |                         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1739:25: note: in expansion of macro ‘Z_ChangeTag’
+ 1739 |                         Z_ChangeTag(anims[wbs->epsd][j].p[i], PU_CACHE);
+      |                         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1746:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1746 |     Z_ChangeTag(percent, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1746:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1746 |     Z_ChangeTag(percent, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1747:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1747 |     Z_ChangeTag(colon, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1747:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1747 |     Z_ChangeTag(colon, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1748:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1748 |     Z_ChangeTag(finished, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1748:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1748 |     Z_ChangeTag(finished, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1749:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1749 |     Z_ChangeTag(entering, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1749:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1749 |     Z_ChangeTag(entering, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1750:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1750 |     Z_ChangeTag(kills, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1750:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1750 |     Z_ChangeTag(kills, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1751:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1751 |     Z_ChangeTag(secret, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1751:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1751 |     Z_ChangeTag(secret, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1752:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1752 |     Z_ChangeTag(sp_secret, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1752:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1752 |     Z_ChangeTag(sp_secret, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1753:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1753 |     Z_ChangeTag(items, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1753:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1753 |     Z_ChangeTag(items, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1754:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1754 |     Z_ChangeTag(frags, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1754:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1754 |     Z_ChangeTag(frags, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1755:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1755 |     Z_ChangeTag(time, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1755:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1755 |     Z_ChangeTag(time, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1756:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1756 |     Z_ChangeTag(sucks, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1756:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1756 |     Z_ChangeTag(sucks, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1757:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1757 |     Z_ChangeTag(par, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1757:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1757 |     Z_ChangeTag(par, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1759:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1759 |     Z_ChangeTag(victims, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1759:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1759 |     Z_ChangeTag(victims, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1760:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1760 |     Z_ChangeTag(killers, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1760:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1760 |     Z_ChangeTag(killers, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1761:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1761 |     Z_ChangeTag(total, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1761:5: note: in expansion of macro ‘Z_ChangeTag’
+ 1761 |     Z_ChangeTag(total, PU_CACHE);
+      |     ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1766:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1766 |         Z_ChangeTag(p[i], PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1766:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1766 |         Z_ChangeTag(p[i], PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:74:7: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   74 |       if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
+      |       ^~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1769:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1769 |         Z_ChangeTag(bp[i], PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/z_zone.h:76:11: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   76 |           Z_ChangeTag2(p,t); \
+      |           ^~~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:1769:9: note: in expansion of macro ‘Z_ChangeTag’
+ 1769 |         Z_ChangeTag(bp[i], PU_CACHE);
+      |         ^~~~~~~~~~~
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c: At top level:
+games/DOOM-master/linuxdoom-1.10/wi_stuff.c:25:1: warning: ‘rcsid’ defined but not used [-Wunused-const-variable=]
+   25 | rcsid[] = "$Id: wi_stuff.c,v 1.7 1997/02/03 22:45:13 b1 Exp $";
+      | ^~~~~
+make: *** [Makefile:132: games/DOOM-master/linuxdoom-1.10/wi_stuff.o] Error 1

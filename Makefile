@@ -6,11 +6,11 @@ LD  = gcc
 
 # Flags
 ASMFLAGS = -f elf32
-CFLAGS   = -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Wall -Wextra -mno-sse -mno-sse2 -mno-mmx -mno-80387 -I./kernel/include -I./kernel
+CFLAGS   = -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Wall -Wextra -mno-sse -mno-sse2 -mno-mmx -mno-80387 -I./kernel/include -I./kernel -I./kernel/include/libc_shim -I./games/DOOM-master/linuxdoom-1.10 -DDOOM_MITHL -DNORMALUNIX=1 -DLINUX=1
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti -fno-use-cxa-atexit
 LDFLAGS  = -m32 -nostdlib -no-pie -Wl,-T,linker/linker.ld -o kernel.elf
 # Sources
-ASM_SOURCES = boot/boot.asm kernel/interrupts.asm kernel/gdt_flush.asm kernel/power.asm
+ASM_SOURCES = boot/boot.asm kernel/interrupts.asm kernel/gdt_flush.asm kernel/power.asm kernel/arch/i386/process.asm
 C_SOURCES   = kernel/kernel.c \
               kernel/gdt.c \
               kernel/idt.c \
@@ -25,8 +25,10 @@ C_SOURCES   = kernel/kernel.c \
               kernel/event.c \
               kernel/input.c \
               kernel/ports.c \
+              kernel/pit.c \
               kernel/console.c \
               kernel/rtc.c \
+              kernel/acpi.c \
               kernel/vga.c \
               kernel/list.c \
               desktop_env/compositor.c \
@@ -47,8 +49,66 @@ C_SOURCES   = kernel/kernel.c \
               kernel/graphics/triangle.c \
               kernel/gpu/gpu.c \
               kernel/boot_adapter.c \
-              kernel/acpi.c \
-              kernel/theme.c
+              kernel/theme.c \
+              kernel/apps/doom/i_mithl.c \
+              kernel/apps/doom/libc_doom.c \
+              games/DOOM-master/linuxdoom-1.10/am_map.c \
+              games/DOOM-master/linuxdoom-1.10/d_items.c \
+              games/DOOM-master/linuxdoom-1.10/d_main.c \
+              games/DOOM-master/linuxdoom-1.10/d_net.c \
+              games/DOOM-master/linuxdoom-1.10/doomdef.c \
+              games/DOOM-master/linuxdoom-1.10/doomstat.c \
+              games/DOOM-master/linuxdoom-1.10/dstrings.c \
+              games/DOOM-master/linuxdoom-1.10/f_finale.c \
+              games/DOOM-master/linuxdoom-1.10/f_wipe.c \
+              games/DOOM-master/linuxdoom-1.10/g_game.c \
+              games/DOOM-master/linuxdoom-1.10/hu_lib.c \
+              games/DOOM-master/linuxdoom-1.10/hu_stuff.c \
+              games/DOOM-master/linuxdoom-1.10/info.c \
+              games/DOOM-master/linuxdoom-1.10/m_argv.c \
+              games/DOOM-master/linuxdoom-1.10/m_bbox.c \
+              games/DOOM-master/linuxdoom-1.10/m_cheat.c \
+              games/DOOM-master/linuxdoom-1.10/m_fixed.c \
+              games/DOOM-master/linuxdoom-1.10/m_menu.c \
+              games/DOOM-master/linuxdoom-1.10/m_misc.c \
+              games/DOOM-master/linuxdoom-1.10/m_random.c \
+              games/DOOM-master/linuxdoom-1.10/m_swap.c \
+              games/DOOM-master/linuxdoom-1.10/p_ceilng.c \
+              games/DOOM-master/linuxdoom-1.10/p_doors.c \
+              games/DOOM-master/linuxdoom-1.10/p_enemy.c \
+              games/DOOM-master/linuxdoom-1.10/p_floor.c \
+              games/DOOM-master/linuxdoom-1.10/p_inter.c \
+              games/DOOM-master/linuxdoom-1.10/p_lights.c \
+              games/DOOM-master/linuxdoom-1.10/p_map.c \
+              games/DOOM-master/linuxdoom-1.10/p_maputl.c \
+              games/DOOM-master/linuxdoom-1.10/p_mobj.c \
+              games/DOOM-master/linuxdoom-1.10/p_plats.c \
+              games/DOOM-master/linuxdoom-1.10/p_pspr.c \
+              games/DOOM-master/linuxdoom-1.10/p_saveg.c \
+              games/DOOM-master/linuxdoom-1.10/p_setup.c \
+              games/DOOM-master/linuxdoom-1.10/p_sight.c \
+              games/DOOM-master/linuxdoom-1.10/p_spec.c \
+              games/DOOM-master/linuxdoom-1.10/p_switch.c \
+              games/DOOM-master/linuxdoom-1.10/p_telept.c \
+              games/DOOM-master/linuxdoom-1.10/p_tick.c \
+              games/DOOM-master/linuxdoom-1.10/p_user.c \
+              games/DOOM-master/linuxdoom-1.10/r_bsp.c \
+              games/DOOM-master/linuxdoom-1.10/r_data.c \
+              games/DOOM-master/linuxdoom-1.10/r_draw.c \
+              games/DOOM-master/linuxdoom-1.10/r_main.c \
+              games/DOOM-master/linuxdoom-1.10/r_plane.c \
+              games/DOOM-master/linuxdoom-1.10/r_segs.c \
+              games/DOOM-master/linuxdoom-1.10/r_sky.c \
+              games/DOOM-master/linuxdoom-1.10/r_things.c \
+              games/DOOM-master/linuxdoom-1.10/s_sound.c \
+              games/DOOM-master/linuxdoom-1.10/sounds.c \
+              games/DOOM-master/linuxdoom-1.10/st_lib.c \
+              games/DOOM-master/linuxdoom-1.10/st_stuff.c \
+              games/DOOM-master/linuxdoom-1.10/tables.c \
+              games/DOOM-master/linuxdoom-1.10/v_video.c \
+              games/DOOM-master/linuxdoom-1.10/w_wad.c \
+              games/DOOM-master/linuxdoom-1.10/wi_stuff.c \
+              games/DOOM-master/linuxdoom-1.10/z_zone.c
 CXX_SOURCES = kernel/lib/cxx_runtime.cpp
 
 OBJECTS     = $(ASM_SOURCES:.asm=.o) $(C_SOURCES:.c=.o) $(CXX_SOURCES:.cpp=.o)
@@ -67,7 +127,14 @@ kernel.elf: $(OBJECTS) $(RUST_LIB)
 
 # C source
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Doom-specific rule (Needs C89/gnu89 for false/true enum)
+games/DOOM-master/linuxdoom-1.10/%.o: games/DOOM-master/linuxdoom-1.10/%.c
+	$(CC) $(CFLAGS) -std=gnu89 -c $< -o $@
+
+kernel/apps/doom/%.o: kernel/apps/doom/%.c
+	$(CC) $(CFLAGS) -std=gnu89 -c $< -o $@
 
 # C++ source
 %.o: %.cpp
@@ -85,7 +152,7 @@ $(RUST_LIB):
 
 # Run in QEMU (BIOS mode)
 run: iso
-	qemu-system-i386 -cdrom Mithl.iso -serial stdio
+	qemu-system-x86_64 -cdrom Mithl.iso -serial stdio
 
 # Create bootable ISO (BIOS only for now)
 iso: kernel.elf
@@ -102,6 +169,11 @@ iso: kernel.elf
 	echo '' >> bootiso/boot/grub/grub.cfg
 	echo 'menuentry "Mithl OS" {' >> bootiso/boot/grub/grub.cfg
 	echo '  multiboot2 /boot/kernel.elf' >> bootiso/boot/grub/grub.cfg
+	# Add Modules
+	if [ -f DOOM1.WAD ]; then \
+	  cp DOOM1.WAD bootiso/boot/; \
+	  echo '  module2 /boot/DOOM1.WAD DOOM1.WAD' >> bootiso/boot/grub/grub.cfg; \
+	fi
 	echo '  boot' >> bootiso/boot/grub/grub.cfg
 	echo '}' >> bootiso/boot/grub/grub.cfg
 	

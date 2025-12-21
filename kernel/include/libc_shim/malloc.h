@@ -1,0 +1,7 @@
+#ifndef _MALLOC_H
+#define _MALLOC_H
+
+#include <stdlib.h>
+#include <alloca.h>
+
+#endif

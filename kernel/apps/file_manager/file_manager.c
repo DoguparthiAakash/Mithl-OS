@@ -115,7 +115,8 @@ static void draw_file_icon(int x, int y) {
     draw_rect_outline(x+10, y, 28, 40, 0xFFCCCCCC);
 }
 
-void fm_draw_content(gui_element_t* element) {
+static void fm_draw_content(gui_renderer_t *renderer, gui_element_t *element) {
+    (void)renderer;
     gui_window_t* win = (gui_window_t*)element;
     int content_w = win->base.bounds.width;
     int content_h = win->base.bounds.height - 24; // Minus title bar

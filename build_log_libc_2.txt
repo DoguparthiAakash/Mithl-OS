@@ -1,0 +1,104 @@
+gcc -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Wall -Wextra -mno-sse -mno-sse2 -mno-mmx -mno-80387 -I./kernel/include -I./kernel -I./kernel/include/libc_shim -I./games/DOOM-master/linuxdoom-1.10 -DDOOM_MITHL -DNORMALUNIX=1 -DLINUX=1 -std=gnu89 -c kernel/apps/doom/libc_doom.c -o kernel/apps/doom/libc_doom.o
+kernel/apps/doom/libc_doom.c: In function ‘fopen’:
+kernel/apps/doom/libc_doom.c:20:5: error: ‘for’ loop initial declarations are only allowed in C99 or C11 mode
+   20 |     for (uint32_t i = 0; i < boot_info.mod_count; i++) {
+      |     ^~~
+kernel/apps/doom/libc_doom.c:20:5: note: use option ‘-std=c99’, ‘-std=gnu99’, ‘-std=c11’ or ‘-std=gnu11’ to compile your code
+kernel/apps/doom/libc_doom.c:37:27: error: ‘mod’ undeclared (first use in this function); did you mean ‘mode’?
+   37 |         if (strcmp((char*)mod->string, filename) == 0) { // Assuming mod->string is the name/cmdline
+      |                           ^~~
+      |                           mode
+kernel/apps/doom/libc_doom.c:37:27: note: each undeclared identifier is reported only once for each function it appears in
+kernel/apps/doom/libc_doom.c:21:15: warning: unused variable ‘mod_name’ [-Wunused-variable]
+   21 |         char *mod_name = boot_info.modules[i].string;
+      |               ^~~~~~~~
+kernel/apps/doom/libc_doom.c:16:47: warning: unused parameter ‘mode’ [-Wunused-parameter]
+   16 | FILE *fopen(const char *filename, const char *mode) {
+      |                                   ~~~~~~~~~~~~^~~~
+kernel/apps/doom/libc_doom.c: In function ‘rename’:
+kernel/apps/doom/libc_doom.c:95:24: warning: unused parameter ‘old’ [-Wunused-parameter]
+   95 | int rename(const char *old, const char *new) { return -1; }
+      |            ~~~~~~~~~~~~^~~
+kernel/apps/doom/libc_doom.c:95:41: warning: unused parameter ‘new’ [-Wunused-parameter]
+   95 | int rename(const char *old, const char *new) { return -1; }
+      |                             ~~~~~~~~~~~~^~~
+kernel/apps/doom/libc_doom.c: In function ‘remove’:
+kernel/apps/doom/libc_doom.c:96:24: warning: unused parameter ‘pathname’ [-Wunused-parameter]
+   96 | int remove(const char *pathname) { return -1; }
+      |            ~~~~~~~~~~~~^~~~~~~~
+kernel/apps/doom/libc_doom.c: In function ‘putchar’:
+kernel/apps/doom/libc_doom.c:97:22: warning: implicit declaration of function ‘console_write_char’; did you mean ‘console_write_len’? [-Wimplicit-function-declaration]
+   97 | int putchar(int c) { console_write_char(c); return c; }
+      |                      ^~~~~~~~~~~~~~~~~~
+      |                      console_write_len
+kernel/apps/doom/libc_doom.c: In function ‘sscanf’:
+kernel/apps/doom/libc_doom.c:99:24: warning: unused parameter ‘str’ [-Wunused-parameter]
+   99 | int sscanf(const char *str, const char *format, ...) { return 0; } // Stub
+      |            ~~~~~~~~~~~~^~~
+kernel/apps/doom/libc_doom.c:99:41: warning: unused parameter ‘format’ [-Wunused-parameter]
+   99 | int sscanf(const char *str, const char *format, ...) { return 0; } // Stub
+      |                             ~~~~~~~~~~~~^~~~~~
+kernel/apps/doom/libc_doom.c: In function ‘open’:
+kernel/apps/doom/libc_doom.c:100:22: warning: unused parameter ‘pathname’ [-Wunused-parameter]
+  100 | int open(const char *pathname, int flags) { return -1; }
+      |          ~~~~~~~~~~~~^~~~~~~~
+kernel/apps/doom/libc_doom.c:100:36: warning: unused parameter ‘flags’ [-Wunused-parameter]
+  100 | int open(const char *pathname, int flags) { return -1; }
+      |                                ~~~~^~~~~
+kernel/apps/doom/libc_doom.c: In function ‘close’:
+kernel/apps/doom/libc_doom.c:101:15: warning: unused parameter ‘fd’ [-Wunused-parameter]
+  101 | int close(int fd) { return 0; }
+      |           ~~~~^~
+kernel/apps/doom/libc_doom.c: In function ‘lseek’:
+kernel/apps/doom/libc_doom.c:102:16: warning: unused parameter ‘fd’ [-Wunused-parameter]
+  102 | long lseek(int fd, long offset, int whence) { return 0; }
+      |            ~~~~^~
+kernel/apps/doom/libc_doom.c:102:25: warning: unused parameter ‘offset’ [-Wunused-parameter]
+  102 | long lseek(int fd, long offset, int whence) { return 0; }
+      |                    ~~~~~^~~~~~
+kernel/apps/doom/libc_doom.c:102:37: warning: unused parameter ‘whence’ [-Wunused-parameter]
+  102 | long lseek(int fd, long offset, int whence) { return 0; }
+      |                                 ~~~~^~~~~~
+kernel/apps/doom/libc_doom.c: In function ‘read’:
+kernel/apps/doom/libc_doom.c:103:14: warning: unused parameter ‘fd’ [-Wunused-parameter]
+  103 | int read(int fd, void *buf, size_t count) { return 0; }
+      |          ~~~~^~
+kernel/apps/doom/libc_doom.c:103:24: warning: unused parameter ‘buf’ [-Wunused-parameter]
+  103 | int read(int fd, void *buf, size_t count) { return 0; }
+      |                  ~~~~~~^~~
+kernel/apps/doom/libc_doom.c:103:36: warning: unused parameter ‘count’ [-Wunused-parameter]
+  103 | int read(int fd, void *buf, size_t count) { return 0; }
+      |                             ~~~~~~~^~~~~
+kernel/apps/doom/libc_doom.c: In function ‘write’:
+kernel/apps/doom/libc_doom.c:104:15: warning: unused parameter ‘fd’ [-Wunused-parameter]
+  104 | int write(int fd, const void *buf, size_t count) {
+      |           ~~~~^~
+kernel/apps/doom/libc_doom.c:104:31: warning: unused parameter ‘buf’ [-Wunused-parameter]
+  104 | int write(int fd, const void *buf, size_t count) {
+      |                   ~~~~~~~~~~~~^~~
+kernel/apps/doom/libc_doom.c: In function ‘mkdir’:
+kernel/apps/doom/libc_doom.c:108:23: warning: unused parameter ‘pathname’ [-Wunused-parameter]
+  108 | int mkdir(const char *pathname, int mode) { return -1; }
+      |           ~~~~~~~~~~~~^~~~~~~~
+kernel/apps/doom/libc_doom.c:108:37: warning: unused parameter ‘mode’ [-Wunused-parameter]
+  108 | int mkdir(const char *pathname, int mode) { return -1; }
+      |                                 ~~~~^~~~
+kernel/apps/doom/libc_doom.c: In function ‘access’:
+kernel/apps/doom/libc_doom.c:109:38: warning: unused parameter ‘mode’ [-Wunused-parameter]
+  109 | int access(const char *pathname, int mode) {
+      |                                  ~~~~^~~~
+kernel/apps/doom/libc_doom.c: In function ‘stat’:
+kernel/apps/doom/libc_doom.c:120:22: warning: unused parameter ‘path’ [-Wunused-parameter]
+  120 | int stat(const char *path, struct stat *buf) { return -1; }
+      |          ~~~~~~~~~~~~^~~~
+kernel/apps/doom/libc_doom.c:120:41: warning: unused parameter ‘buf’ [-Wunused-parameter]
+  120 | int stat(const char *path, struct stat *buf) { return -1; }
+      |                            ~~~~~~~~~~~~~^~~
+kernel/apps/doom/libc_doom.c: In function ‘fstat’:
+kernel/apps/doom/libc_doom.c:121:15: warning: unused parameter ‘fd’ [-Wunused-parameter]
+  121 | int fstat(int fd, struct stat *buf) { return -1; }
+      |           ~~~~^~
+kernel/apps/doom/libc_doom.c:121:32: warning: unused parameter ‘buf’ [-Wunused-parameter]
+  121 | int fstat(int fd, struct stat *buf) { return -1; }
+      |                   ~~~~~~~~~~~~~^~~
+make: *** [Makefile:135: kernel/apps/doom/libc_doom.o] Error 1

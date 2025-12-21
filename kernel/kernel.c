@@ -21,6 +21,8 @@
 #include "desktop.h"
 #include "graphics.h"
 #include "mm/pmm.h"
+#include "process.h"
+#include "vfs.h"
 
 // Initialize inputs
 static void init_input_devices(void)
@@ -45,6 +47,9 @@ void renderer_draw_text(const char *text, point_t pos, uint32_t color) {
 
 extern void call_constructors(void);
 extern void call_destructors(void);
+
+// Global Boot Info
+boot_info_t boot_info;
 
 // Enable SSE (SIMD) to prevent Invalid Opcode exceptions from Rust/GCC code
 void enable_sse(void) {
@@ -158,10 +163,19 @@ void kmain(uint32_t magic, void* addr)
     // Initialize input devices
     init_input_devices();
     
-    // Initialize VFS
+    // Initialize VFS and RamFS
+    vfs_init();
     void ramfs_init_clean(void);
     ramfs_init_clean();
+    
+    // Load Modules (e.g. Doom WAD)
+    extern void ramfs_load_modules(boot_info_t *info);
+    ramfs_load_modules(&boot_info);
     // fs_init(); // Old dumb filesystem 
+    
+    // Initialize PIT (100Hz)
+    void pit_init(uint32_t frequency);
+    pit_init(100);
     
     // Show Boot Logo
     console_write("[INFO] Drawing Boot Logo...\n");
@@ -190,6 +204,12 @@ void kmain(uint32_t magic, void* addr)
     
     static int prev_x = -1, prev_y = -1;
     gui_mgr.needs_redraw = 0;
+
+    // Initialize Process Manager
+    process_init_main_thread();
+    
+    // Enable Interrupts (PIT will drive preemption)
+    asm volatile("sti");
 
     // === Main event loop ===
     while (1)
