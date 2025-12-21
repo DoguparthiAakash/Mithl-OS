@@ -10,7 +10,7 @@ CFLAGS   = -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Wall -Wextra -mno-s
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti -fno-use-cxa-atexit
 LDFLAGS  = -m32 -nostdlib -no-pie -Wl,-T,linker/linker.ld -o kernel.elf
 # Sources
-ASM_SOURCES = boot/boot.asm kernel/interrupts.asm kernel/gdt_flush.asm kernel/power.asm kernel/arch/i386/process.asm
+ASM_SOURCES = boot/boot.asm kernel/interrupts.asm kernel/gdt_flush.asm kernel/power.asm kernel/arch/i386/process.asm kernel/hal/x86_64/cpu_control.asm
 C_SOURCES   = kernel/kernel.c \
               kernel/gdt.c \
               kernel/idt.c \
@@ -42,6 +42,7 @@ C_SOURCES   = kernel/kernel.c \
               kernel/fs/fat32/fat32.c \
               kernel/vfs.c \
               kernel/ramfs.c \
+              kernel/hal_test.c \
               kernel/process.c \
               windowmanager/mithl_wm.c \
               kernel/mm/pmm.c \
@@ -113,6 +114,8 @@ C_SOURCES   = kernel/kernel.c \
               games/DOOM-master/linuxdoom-1.10/wi_stuff.c \
               games/DOOM-master/linuxdoom-1.10/z_zone.c
 CXX_SOURCES = kernel/lib/cxx_runtime.cpp
+#              windowmanager/cpp/Window.cpp \
+#              windowmanager/cpp/WindowManager.cpp
 
 OBJECTS     = $(ASM_SOURCES:.asm=.o) $(C_SOURCES:.c=.o) $(CXX_SOURCES:.cpp=.o)
 RUST_LIB    = kernel/rust/target/i686-unknown-linux-gnu/release/libmithl_rust.a

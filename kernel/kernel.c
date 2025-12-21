@@ -245,6 +245,10 @@ void kmain(uint32_t magic, void* addr)
     
     console_log("[INFO] Draw Complete. Entering Loop.\n");
     
+    // Run HAL tests (DISABLED - causes crash in QEMU without proper CPU flags)
+    // extern void hal_run_all_tests(void);
+    // hal_run_all_tests();
+    
     static int prev_x = -1, prev_y = -1;
     gui_mgr.needs_redraw = 0;
 
@@ -274,9 +278,11 @@ void kmain(uint32_t magic, void* addr)
         
         // DOCK INTERCEPTOR REMOVED - Handled by Compositor now
 
+
         // If mouse moved, we need to redraw TWO areas:
         // A. The OLD cursor position (to erase it / restore background)
         // B. The NEW cursor position (to draw it)
+        int mouse_moved = 0;
         if (cur_x != prev_x || cur_y != prev_y) {
              // Invalidate OLD cursor area (shifted by hotspot)
              if (prev_x != -1) {
@@ -284,31 +290,36 @@ void kmain(uint32_t magic, void* addr)
              }
              // Invalidate NEW cursor area (shifted by hotspot)
              gui_invalidate_rect((rect_t){cur_x - hot_x, cur_y - hot_y, 48, 48});
+             mouse_moved = 1;
         }
 
         // 3. Update Desktop / GUI
-        // This processes events and redraws DIRTY regions to the BACKBUFFER.
-        // It does NOT present to screen yet.
-        desktop_check_clock();
-        // desktop_update(); // Skip broken desktop update that might consume clicks? 
-        // Or keep it for clock updates? 
-        // Keep it, but our interceptor runs first.
-        desktop_update(); 
+        // OPTIMIZATION: Skip desktop_update when idle
+        // For now, always update to ensure keyboard input is visible
+        // TODO: Add proper keyboard event detection
+        int needs_update = 1; // Always update for now (fixes terminal input)
+        
+        if (needs_update) {
+            desktop_check_clock();
+            desktop_update(); 
+        }
 
         // 4. Force global redraw if requested (e.g. wallpaper change)
         if (gui_mgr.needs_redraw && gui_mgr.dirty_rect.width == gui_mgr.screen_width) {
             desktop_draw(); // Full redraw to backbuffer
         }
         
-        // 5. Unconditional Mouse Overlay ON BACKBUFFER
+        // 5. Unconditional Mouse Overlay ON BACKBUFFER (only if we're updating)
         // We draw the cursor on top of the backbuffer content we just updated.
         // Since we invalidated the cursor rects, they are included in dirty_rect.
-        draw_cursor_icon(cur_x, cur_y);
+        if (needs_update) {
+            draw_cursor_icon(cur_x, cur_y);
         
-        // 6. Present Frame (Efficient Swap)
-        // This copies ONLY the dirty_rect from Backbuffer to Video Memory.
-        // This is the key optimization: reducing bandwidth from 3MB/frame to ~10KB/frame (mouse only).
-        gui_present();
+            // 6. Present Frame (Efficient Swap)
+            // This copies ONLY the dirty_rect from Backbuffer to Video Memory.
+            // This is the key optimization: reducing bandwidth from 3MB/frame to ~10KB/frame (mouse only).
+            gui_present();
+        }
         
         // 7. Update State
         prev_x = cur_x;

@@ -40,11 +40,22 @@ byte* I_ZoneBase (int* size) {
 }
 
 int I_GetTime (void) {
-    // Return ticks (1/35 sec roughly)
-    // rtc_get_seconds is missing and too slow.
-    // Just increment for now (unlimited speed / fast forward)
-    static int t = 0;
-    return t++;
+    // DOOM runs at 35 FPS (1 tic = 1/35 second ≈ 28.57ms)
+    // For now, use a simple counter with a small delay
+    // TODO: Use actual PIT timer when available
+    
+    static int doom_tics = 0;
+    static int delay_counter = 0;
+    
+    // Add a small delay to slow down the game
+    // This is a rough approximation - adjust as needed
+    delay_counter++;
+    if (delay_counter >= 50000) {  // Tune this value
+        delay_counter = 0;
+        doom_tics++;
+    }
+    
+    return doom_tics;
 }
 
 extern void process_exit(void);
@@ -187,8 +198,54 @@ void I_ReadScreen (byte* scr) {
 }
 
 void I_StartFrame (void) { }
+
+// Key translation for DOOM
+static int doom_translate_key(uint8_t scancode) {
+    switch(scancode) {
+        // Arrow keys
+        case 0x48: return KEY_UPARROW;    // Up
+        case 0x50: return KEY_DOWNARROW;  // Down
+        case 0x4B: return KEY_LEFTARROW;  // Left
+        case 0x4D: return KEY_RIGHTARROW; // Right
+        
+        // WASD
+        case 0x11: return 'w';  // W - forward
+        case 0x1F: return 's';  // S - backward
+        case 0x1E: return 'a';  // A - strafe left
+        case 0x20: return 'd';  // D - strafe right
+        
+        // Actions
+        case 0x39: return ' ';          // Space - open doors/activate
+        case 0x1D: return KEY_RCTRL;    // Ctrl - shoot
+        case 0x01: return KEY_ESCAPE;   // ESC - menu
+        case 0x1C: return KEY_ENTER;    // Enter - select
+        
+        // Numbers for weapon selection
+        case 0x02: return '1';
+        case 0x03: return '2';
+        case 0x04: return '3';
+        case 0x05: return '4';
+        case 0x06: return '5';
+        case 0x07: return '6';
+        case 0x08: return '7';
+        
+        default: return 0;
+    }
+}
+
 void I_StartTic (void) { 
-    // Input Handling (Pending)
+    // Poll keyboard and send events to DOOM
+    int scancode = keyboard_poll();
+    
+    if (scancode != 0) {
+        event_t ev;
+        ev.type = (scancode & 0x80) ? ev_keyup : ev_keydown;
+        ev.data1 = doom_translate_key(scancode & 0x7F);
+        
+        if (ev.data1) {
+            D_PostEvent(&ev);
+        }
+    }
 }
 
 // --- SOUND / NET ---
