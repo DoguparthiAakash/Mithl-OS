@@ -240,6 +240,9 @@ void ramfs_init(void) {
     ramfs_add_child(aakash, ramfs_create_dir("Documents"));
     ramfs_add_child(aakash, ramfs_create_dir("Downloads"));
     ramfs_add_child(aakash, ramfs_create_dir("Desktop"));
+    ramfs_add_child(aakash, ramfs_create_dir("Pictures"));
+    ramfs_add_child(aakash, ramfs_create_dir("Music"));
+    ramfs_add_child(aakash, ramfs_create_dir("Videos"));
     
     // 4. Config Files
     ramfs_add_child(etc, ramfs_create_file("hostname", "mithl-os\n"));

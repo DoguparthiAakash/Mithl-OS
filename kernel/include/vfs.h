@@ -75,4 +75,13 @@ void vfs_init(void);
 // Path Resolution Helper (Added for Terminal)
 fs_node_t *vfs_resolve_path(const char *path);
 
+// File Manager Operations
+int vfs_delete(fs_node_t *parent, const char *name);  // Delete file/folder
+int vfs_rename(fs_node_t *parent, const char *old_name, const char *new_name);  // Rename
+int vfs_copy(const char *src_path, const char *dest_path);  // Copy file/folder
+int vfs_move(const char *src_path, const char *dest_path);  // Move file/folder
+
+// RamFS helper (should be in ramfs.h but exposed here for kernel.c)
+void ramfs_add_child(fs_node_t *dir, fs_node_t *child);
+
 #endif

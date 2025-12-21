@@ -81,8 +81,8 @@ void desktop_init(void) {
     // Initialize any desktop state here
     // terminal_init(); // Removed to prevent auto-spawn
     
-    console_write("[COMPOSITOR] Auto-launching File Manager...\n");
-    file_manager_show();
+    // console_write("[COMPOSITOR] Auto-launching File Manager...\n");
+    // file_manager_show();
     
     // Override Root Event Handler for Desktop Keyboard Navigation AND Drawing
     if (gui_mgr.root) {
@@ -198,7 +198,7 @@ void desktop_root_handler(gui_element_t *element, gui_event_t *event) {
                      file_manager_show();
                  }
                  else if (selected_icon == 1) {
-                     console_write("[COMPOSITOR] Launching File Manager (icon 1)\n");
+                     serial_write("[COMPOSITOR] Launching File Manager (icon 1)\n");
                      file_manager_show();
                  }
                  else if (selected_icon == 5) {

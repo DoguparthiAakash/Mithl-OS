@@ -608,6 +608,13 @@ void gui_window_event_handler(gui_element_t *element, gui_event_t *event)
             int dy = y - btn_y;
             if (dx*dx + dy*dy <= 36) { 
                  // Close Window
+                 // Dispatch Close Event
+                 if (win->base.event_handler) {
+                     gui_event_t close_ev;
+                     close_ev.type = GUI_EVENT_WINDOW_CLOSE;
+                     win->base.event_handler((gui_element_t*)win, &close_ev);
+                 }
+                 
                  gui_invalidate_rect(win->base.bounds); // Mark area as dirty BEFORE moving
                  win->base.bounds.x = -1000; // Hide offscreen
                  gui_mgr.needs_redraw = 1;

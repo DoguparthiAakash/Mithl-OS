@@ -43,7 +43,8 @@ typedef enum
     GUI_EVENT_MOUSE_UP,
     GUI_EVENT_MOUSE_MOVE,
     GUI_EVENT_MOUSE_SCROLL,
-    GUI_EVENT_KEY_PRESS
+    GUI_EVENT_KEY_PRESS,
+    GUI_EVENT_WINDOW_CLOSE
 } gui_event_type_t;
 
 /* --- Layout Management (i3-inspired) --- */

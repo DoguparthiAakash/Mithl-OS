@@ -16,6 +16,7 @@ C_SOURCES   = kernel/kernel.c \
               kernel/idt.c \
               kernel/graphics.c \
               kernel/gui.c \
+              kernel/gui_dialog.c \
               kernel/filesystem.c \
               kernel/keyboard.c \
               kernel/mouse.c \
@@ -38,6 +39,7 @@ C_SOURCES   = kernel/kernel.c \
               kernel/apps.c \
               kernel/apps/text_editor/text_editor.c \
               kernel/apps/file_manager/file_manager.c \
+              kernel/fs/fat32/fat32.c \
               kernel/vfs.c \
               kernel/ramfs.c \
               kernel/process.c \
@@ -143,7 +145,8 @@ kernel/apps/doom/%.o: kernel/apps/doom/%.c
 
 # Clean
 disk.img:
-	qemu-img create -f raw disk.img 32M
+	dd if=/dev/zero of=disk.img bs=1M count=32
+	mkfs.vfat -F 32 disk.img
 
 clean:
 	rm -f $(OBJECTS) kernel.elf Mithl.iso

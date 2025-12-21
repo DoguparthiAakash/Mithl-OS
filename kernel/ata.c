@@ -11,6 +11,12 @@
 #define ATA_DRIVE_HEAD  0x1F6
 #define ATA_COMMAND     0x1F7
 #define ATA_STATUS      0x1F7
+#define ATA_STATUS_BSY  0x80
+#define ATA_STATUS_DRQ  0x08
+#define ATA_STATUS_ERR  0x01
+
+#define ATA_CMD_READ_PIO    0x20
+#define ATA_CMD_WRITE_PIO   0x30
 
 void ata_init(void) {
     // Basic identification could go here, but usually just ready to use

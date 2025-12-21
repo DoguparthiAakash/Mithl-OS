@@ -25,6 +25,7 @@
 #include "process.h"
 #include "vfs.h"
 #include "apps/file_manager/file_manager.h"
+#include "fs/fat32/fat32.h"
 
 // Forward declaration for Doom
 extern void D_DoomMain(void);
@@ -201,6 +202,18 @@ void kmain(uint32_t magic, void* addr)
     // Load Modules (e.g. Doom WAD)
     extern void ramfs_load_modules(boot_info_t *info);
     ramfs_load_modules(&boot_info);
+    // Initialize FAT32
+    serial_write("[KERNEL] Initializing FAT32 (Drive 0, LBA 0)...\n");
+    fat32_init(0);
+    fs_node_t *hdd = fat32_mount();
+    if (hdd) {
+        strcpy(hdd->name, "hdd");
+        ramfs_add_child(fs_root, hdd);
+        serial_write("[KERNEL] Mounted FAT32 at /hdd\n");
+    } else {
+         serial_write("[KERNEL] Failed to mount FAT32\n");
+    }
+    
     // fs_init(); // Old dumb filesystem 
     
     // Initialize PIT (100Hz)
@@ -259,68 +272,7 @@ void kmain(uint32_t magic, void* addr)
         int hot_x = 5;
         int hot_y = 4;
         
-        // DOCK INTERCEPTOR FIX
-        int screen_h = gui_mgr.screen_height;
-        int screen_w = gui_mgr.screen_width;
-        int dock_h = 90;
-        int dock_y = screen_h - dock_h;
-        
-        if (m->buttons & 1) { // Left Click
-             if (!handled_click) {
-                 // DEBUG MOUSE CLICKS
-                 char buf[64];
-                 // Warning: implicit int to string conversion if no helper?
-                 // assuming simple printf style or I'll implement a dumb one? 
-                 // We don't have sprintf in kernel.c easily unless I include stdio shim.
-                 // Let's just print simple messages with values if possible, or just ranges.
-                 
-                 console_write("MOUSE CLICK: Y=");
-                 // Hacky int print since vsprintf might not be available
-                 // Use simple checks to print range for debugging visualy
-                 if (cur_y > dock_y) console_write(" > DOCK_Y");
-                 else console_write(" < DOCK_Y");
-                 console_write("\n");
-                 
-                 if (cur_y > dock_y) {
-                     // In Dock Area
-                     console_write("[KERNEL] Dock Click Detected!\n");
-                     
-                     // Calculate Icon Index roughly
-                     int dock_w = 7 * 64; // Approx
-                     int dock_start_x = (screen_w - dock_w) / 2;
-                     
-                     int icon_idx = (cur_x - dock_start_x) / 64;
-                     
-                     // Debug Index
-                     // console_write("Icon Index: ");
-                     // print_int(icon_idx); // missing helper
-                     
-                     if (cur_x >= dock_start_x) {
-                         // Widen the hit targets slightly by checking range
-                         // FM: Index 1 or 2
-                         if (icon_idx >= 1 && icon_idx <= 2) {
-                             // Try launching FM
-                             console_write("[KERNEL] Launching File Manager [Index 1-2]\n");
-                             launch_file_manager_safe();
-                         }
-                         // Doom: Index 5 or 6 (allow 5+ to be safe)
-                         else if (icon_idx >= 5) {
-                             // Doom is likely last
-                             console_write("[KERNEL] Launching Doom [Index 5+]\n");
-                             launch_doom_safe();
-                         } else {
-                             console_write("[KERNEL] Clicked Index: Unknown/Ignored\n");
-                         }
-                     } else {
-                         console_write("[KERNEL] Click Left of Dock\n");
-                     }
-                 }
-                 handled_click = 1; // Debounce
-             }
-        } else {
-             // Reset when released
-             handled_click = 0;
-        }
+        // DOCK INTERCEPTOR REMOVED - Handled by Compositor now
 
         // If mouse moved, we need to redraw TWO areas:
         // A. The OLD cursor position (to erase it / restore background)

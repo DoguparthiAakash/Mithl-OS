@@ -15,9 +15,15 @@ extern void console_log(const char *msg);
 
 static gui_window_t *wm_root = NULL;
 
+#include <ports.h>
+extern void serial_write(const char *msg);
+
 void wm_init(void) {
+    serial_write("[WM] Init Start...\n");
     // Create Root Container (Floating usually for Desktop)
     wm_root = (gui_window_t*)memory_alloc(sizeof(gui_window_t));
+    if (!wm_root) { serial_write("[WM] Alloc Failed!\n"); return; }
+    
     memset(wm_root, 0, sizeof(gui_window_t));
     
     // Root is a Container
@@ -29,6 +35,7 @@ void wm_init(void) {
     wm_root->base.bounds = (rect_t){0, 0, gui_mgr.screen_width, gui_mgr.screen_height};
     
     console_log("[WM] Sway-like Tree Initialized.\n");
+    serial_write("[WM] Init Done.\n");
 }
 
 /* Recursive Render / Layout Engine */
@@ -83,6 +90,7 @@ void wm_render_tree(gui_window_t *node, rect_t bounds) {
 }
 
 void wm_manage_window(gui_window_t *window) {
+    serial_write("[WM] Managing Window...\n");
     if (!wm_root) wm_init();
     
     // 1. Add to Tree (Generic Floating for now)
