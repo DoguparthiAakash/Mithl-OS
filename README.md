@@ -1,20 +1,40 @@
 <div align="center">
 
-  <img src="OSLogo.png" alt="Mithl OS Logo" width="200" height="200">
+  <br />
+  <img src="OSLogo.png" alt="Mithl OS Logo" width="180" height="180">
+  
+  <h1 align="center">Mithl OS 🚀</h1>
 
-  # Mithl OS 🚀
-  **The Next-Generation Independent Operating System**
+  <p align="center">
+    <b>The Next-Generation Independent Operating System</b><br/>
+    Built from scratch in C, Assembly & Rust. No Linux. No Unix. Just Code.
+    <br />
+    <br />
+    <a href="#-getting-started"><strong>⬇️ Download ISO</strong></a>
+    ·
+    <a href="#-under-the-hood-technical-specs"><strong>📖 Read Docs</strong></a>
+    ·
+    <a href="#-contributing"><strong>🤝 Join Development</strong></a>
+  </p>
 
-  [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/your-username/Mithl-OS)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Platform](https://img.shields.io/badge/Platform-x86__64%20%7C%20i686-blue)](https://github.com/DoguparthiAakash/Mithl-OS)
-  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-orange.svg)](http://makeapullrequest.com)
-
+  <p align="center">
+    <a href="https://github.com/DoguparthiAakash/Mithl-OS/actions">
+      <img src="https://img.shields.io/badge/build-passing-brightgreen?style=flat-square" alt="Build Status" />
+    </a>
+    <a href="https://opensource.org/licenses/MIT">
+      <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License" />
+    </a>
+    <a href="https://github.com/DoguparthiAakash/Mithl-OS">
+      <img src="https://img.shields.io/badge/Platform-x86__64%20%7C%20i686-blue?style=flat-square" alt="Platform" />
+    </a>
+    <a href="http://makeapullrequest.com">
+      <img src="https://img.shields.io/badge/PRs-welcome-orange.svg?style=flat-square" alt="PRs Welcome" />
+    </a>
+  </p>
+  
   <p align="center">
     <b>Built from Scratch</b> • <b>No Linux Kernel</b> • <b>Glassmorphism UI</b>
   </p>
-
-  [⬇️ Download ISO](#-getting-started) • [📖 Documentation](#-under-the-hood-technical-specs) • [🤝 Join the Devs](#-contributing)
 
 </div>
 
@@ -33,9 +53,9 @@ We prioritize:
 
 ---
 
-## 🎨 The Experience (Screenshots)
+## 🎨 The Experience
 
-> *Place a GIF or Screenshot here showing the OS booting and opening a window.*
+![Mithl OS Demo](demo.gif)
 
 ### 🖥️ The Desktop Environment
 We built our own **Compositor** from scratch to avoid the bloat of X11 or Wayland.
@@ -74,6 +94,7 @@ You need a Linux environment (WSL2 works) with:
 * `qemu-system-x86_64` (for emulation)
 
 ### Installation Steps
+
 1.  **Clone the Repo**:
     ```bash
     git clone [https://github.com/DoguparthiAakash/Mithl-OS.git](https://github.com/DoguparthiAakash/Mithl-OS.git)
@@ -81,6 +102,7 @@ You need a Linux environment (WSL2 works) with:
     ```
 
 2.  **Compile & Run (UEFI/BIOS Hybrid)**:
+    This command builds the kernel, creates a bootable ISO, and launches QEMU.
     ```bash
     make run-uefi
     ```
@@ -102,21 +124,21 @@ We are building in public. Here is our current status:
 - [ ] **Multitasking:** Preemptive scheduling & Ring 3 User Mode
 - [ ] **Connectivity:** Basic TCP/IP Network Stack
 - [ ] **The Least Goal:** Run Doom.
-- [ ] **The Actual Goal** To make it use by all like linux and other Major OS's without dissatisfaction.
-- [ ] **The Ultimate Goal:** Handle and use Extreme complex tasks and all without pannic and Lag.
+- [ ] **The Actual Goal:** To make it usable by all, like Linux and other major OSs, without dissatisfaction.
+- [ ] **The Ultimate Goal:** Handle and use extreme complex tasks without panic or lag.
 
 ---
 
 ## 🤝 How to Contribute
 
-**Mithl OS is open for everyone.** whether you are a kernel expert or a student learning C.
+**Mithl OS is open for everyone**, whether you are a kernel expert or a student learning C.
 
 **We are specifically looking for help with:**
 1.  **Rust Integration:** Helping us move more drivers to Rust.
 2.  **UI Design:** Refining icons and window themes.
 3.  **Testing:** Running the ISO on real hardware and reporting logs.
-4.  **Core Development** Adding functions and features to make it happen.
-5.  **App store and Apps** Building/Developing/Converting Apps that wanted to run in the os.
+4.  **Core Development:** Adding functions and features to make it happen.
+5.  **App Ecosystem:** Building, developing, and converting apps to run natively on the OS.
 
 **Steps to Contribute:**
 1.  Fork the repo.
@@ -131,6 +153,6 @@ We are building in public. Here is our current status:
 **Mithl OS** is open-source software licensed under the **MIT License**.
 
 > **A Note from the Creator:**
-> *This OS was born out of pure curiosity. It is a non-profit, community-driven project. If you are willing to use the code, contribute to the kernel, or help us grow into like a Linux Or Other Platforms, you are heartily welcomed. Let's build something amazing together.*
+> *This OS was born out of pure curiosity. It is a non-profit, community-driven project. If you are willing to use the code, contribute to the kernel, or help us grow into something like Linux or other platforms, you are heartily welcomed. Let's build something amazing together.*
 >
 > *Crafted with ❤️ and caffeine by Aakash and the Open Source Community.*
