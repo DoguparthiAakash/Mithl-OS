@@ -2,7 +2,7 @@
 
   <br />
   <img src="OSLogo.png" alt="Mithl OS Logo" width="300" height="300">
-  
+   
   <h1 align="center">Mithl OS 🚀</h1>
 
   <p align="center">
@@ -31,7 +31,7 @@
       <img src="https://img.shields.io/badge/PRs-welcome-orange.svg?style=flat-square" alt="PRs Welcome" />
     </a>
   </p>
-  
+   
   <p align="center">
     <b>Built from Scratch</b> • <b>No Linux Kernel</b> • <b>Glassmorphism UI</b>
   </p>
@@ -120,7 +120,7 @@ We are building in public. Here is our current status:
 
 - [x] **Core:** Bootloader & GDT/IDT Initialization
 - [x] **Graphics:** VESA Linear Framebuffer & Custom Compositor
-- [ ] **Filesystem:** True Read/Write support (FAT32/extFAT/EXT4/Brtfs/ZFS)
+- [ ] **Filesystem:** True Read/Write support (FAT32, exFAT, EXT4, Btrfs, ZFS)
 - [ ] **Multitasking:** Preemptive scheduling & Ring 3 User Mode
 - [ ] **Connectivity:** Basic TCP/IP Network Stack
 - [ ] **The Least Goal:** Run Doom.
