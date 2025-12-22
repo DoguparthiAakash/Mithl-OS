@@ -101,7 +101,9 @@ We are building in public. Here is our current status:
 - [ ] **Filesystem:** True Read/Write support (FAT32/EXT2)
 - [ ] **Multitasking:** Preemptive scheduling & Ring 3 User Mode
 - [ ] **Connectivity:** Basic TCP/IP Network Stack
-- [ ] **The Ultimate Goal:** Run Doom.
+- [ ] **The Least Goal:** Run Doom.
+- [ ] **The Actual Goal** To make it use by all like linux and other Major OS's without dissatisfaction.
+- [ ] **The Ultimate Goal:** Handle and use Extreme complex tasks and all without pannic and Lag.
 
 ---
 
@@ -113,6 +115,8 @@ We are building in public. Here is our current status:
 1.  **Rust Integration:** Helping us move more drivers to Rust.
 2.  **UI Design:** Refining icons and window themes.
 3.  **Testing:** Running the ISO on real hardware and reporting logs.
+4.  **Core Development** Adding functions and features to make it happen.
+5.  **App store and Apps** Building/Developing/Converting Apps that wanted to run in the os.
 
 **Steps to Contribute:**
 1.  Fork the repo.
@@ -127,6 +131,6 @@ We are building in public. Here is our current status:
 **Mithl OS** is open-source software licensed under the **MIT License**.
 
 > **A Note from the Creator:**
-> *This OS was born out of pure curiosity. It is a non-profit, community-driven project. If you are willing to use the code, contribute to the kernel, or help us grow into a Linux-alternative community, you are heartily welcomed. Let's build something amazing together.*
+> *This OS was born out of pure curiosity. It is a non-profit, community-driven project. If you are willing to use the code, contribute to the kernel, or help us grow into like a Linux Or Other Platforms, you are heartily welcomed. Let's build something amazing together.*
 >
 > *Crafted with ❤️ and caffeine by Aakash and the Open Source Community.*
