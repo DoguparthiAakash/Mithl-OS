@@ -75,7 +75,7 @@ For the engineers, here is what makes Mithl OS tick:
 
 | Component | Technology | Description |
 | :--- | :--- | :--- |
-| **Kernel** | **C99 & Assembly** | The core foundation for speed and robustness. |
+| **Kernel** | **C, C+++ & Assembly** | The core foundation for speed and robustness. |
 | **Safety** | **Rust** | Currently integrating Rust for memory-safe driver development. |
 | **Boot** | **Multiboot2** | Supports both Legacy BIOS and UEFI systems. |
 | **Memory** | **PMM & VMM** | Custom bitmap allocator and paging system. |
