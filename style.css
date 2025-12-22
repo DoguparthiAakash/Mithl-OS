@@ -48,23 +48,21 @@ ul { list-style: none; }
 
 .hero-content { max-width: 50%; }
 
-/* --- HERO MODIFIER: CENTERED (New Addition) --- */
-/* This class fixes pages that don't have an image on the right */
+/* --- HERO MODIFIER: CENTERED --- */
 .hero.hero-centered {
     justify-content: center;
     text-align: center;
-    min-height: 60vh; /* Slightly shorter for text-only pages */
+    min-height: 60vh; 
 }
 
 .hero.hero-centered .hero-content {
-    max-width: 800px; /* Limits width for readability */
+    max-width: 800px; 
     margin: 0 auto;
 }
 
 .hero.hero-centered .cta-group {
-    justify-content: center; /* Centers the buttons */
+    justify-content: center; 
 }
-/* ---------------------------------------------- */
 
 h1 { font-size: 3.5rem; line-height: 1.1; margin-bottom: 1.5rem; }
 .gradient-text {
@@ -191,4 +189,72 @@ footer {
     border-top: 1px solid rgba(255,255,255,0.05);
     margin-top: 4rem;
     color: #666;
+}
+
+/* ========================================
+   --- RESPONSIVE MEDIA QUERIES --- 
+   This makes the site work on Mobile/Tablet
+   ========================================
+*/
+
+/* For Tablets and Mobile Phones (Screens smaller than 768px) */
+@media (max-width: 768px) {
+    
+    /* 1. Stack the Navigation Bar */
+    .glass-nav {
+        flex-direction: column;
+        padding: 1rem;
+    }
+    
+    .nav-links {
+        margin-top: 1rem;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+    }
+
+    /* 2. Stack the Hero Section (Text Top, Image Bottom) */
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 6rem 5% 3rem 5%; /* More top padding for nav space */
+    }
+
+    .hero-content {
+        max-width: 100%; /* Use full width on mobile */
+    }
+
+    /* 3. Adjust Font Sizes */
+    h1 {
+        font-size: 2.5rem; /* Make big text slightly smaller */
+    }
+
+    .hero p {
+        font-size: 1rem;
+    }
+
+    /* 4. Center the Buttons */
+    .cta-group {
+        justify-content: center;
+        flex-wrap: wrap; /* Stack buttons if screen is VERY small */
+    }
+
+    /* 5. Fix the Glass Card/Terminal Image */
+    .hero-visual {
+        margin-top: 3rem;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .glass-card {
+        width: 100%; /* Fit to screen width */
+        max-width: 350px;
+    }
+
+    /* 6. Fix Content Padding */
+    .teaser, .content-page {
+        padding: 3rem 5%;
+    }
 }
