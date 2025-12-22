@@ -1,7 +1,7 @@
 <div align="center">
 
   <br />
-  <img src="OSLogo.png" alt="Mithl OS Logo" width="180" height="180">
+  <img src="OSLogo.png" alt="Mithl OS Logo" width="300" height="300">
   
   <h1 align="center">Mithl OS 🚀</h1>
 
