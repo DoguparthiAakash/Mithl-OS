@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features | Mithl OS</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <nav class="glass-nav">
+        <div class="logo">
+            <img src="OSLogo.png" alt="Mithl OS" style="height: 40px; vertical-align: middle; margin-right: 8px; border-radius: 50%;"> 
+            Mithl OS
+        </div>
+
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="features.html" class="active">Features & Tech</a></li>
+            <li><a href="contribute.html">Contribute</a></li>
+            <li><a href="https://github.com/DoguparthiAakash/Mithl-OS" target="_blank">GitHub</a></li>
+        </ul>
+    </nav>
+
+    <section class="content-page">
+        <h1>Under the Hood</h1>
+        <p class="subtitle">A deep dive into the architecture of Mithl OS.</p>
+
+        <div class="tech-grid">
+            <div class="tech-item">
+                <h3>🖥️ Graphics Engine</h3>
+                <p>We don't use X11 or Wayland. Our custom compositor supports alpha blending, VESA linear framebuffers, and double buffering to eliminate screen tearing.</p>
+            </div>
+            <div class="tech-item">
+                <h3>💾 Memory Management</h3>
+                <p>Features a custom Physical Memory Manager (PMM) using a bitmap allocator and a Virtual Memory Manager (VMM) handling paging.</p>
+            </div>
+            <div class="tech-item">
+                <h3>🔌 Driver Support</h3>
+                <p>Native drivers for PS/2 Keyboards, Mouse, ACPI Power Management, and Serial Ports for debugging.</p>
+            </div>
+            <div class="tech-item">
+                <h3>🦀 Rust Integration</h3>
+                <p>We are slowly replacing critical C drivers with Rust to prevent buffer overflows and memory leaks at the kernel level.</p>
+            </div>
+        </div>
+
+        <div class="roadmap-section">
+            <h2>Current Roadmap</h2>
+            <ul class="checklist">
+                <li class="done">Bootloader & GDT Setup</li>
+                <li class="done">VESA Graphics & UI</li>
+                <li>Write/Read File System Support</li>
+                <li>Preemptive Multitasking</li>
+                <li>Run DOOM</li>
+            </ul>
+        </div>
+    </section>
+    
+    <footer>
+        <p>Crafted with ❤️ by Aakash & The Open Source Community.</p>
+    </footer>
+
+</body>
+</html>
