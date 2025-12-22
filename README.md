@@ -10,7 +10,7 @@
     Built from scratch in C, Assembly & Rust. No Linux. No Unix. Just Code.
     <br />
     <br />
-    <a href="#-getting-started"><strong>⬇️ Download ISO</strong></a>
+    <a href="https://github.com/DoguparthiAakash/Mithl-OS/releases"><strong>⬇️ Download ISO</strong></a>
     ·
     <a href="#-under-the-hood-technical-specs"><strong>📖 Read Docs</strong></a>
     ·
@@ -120,7 +120,7 @@ We are building in public. Here is our current status:
 
 - [x] **Core:** Bootloader & GDT/IDT Initialization
 - [x] **Graphics:** VESA Linear Framebuffer & Custom Compositor
-- [ ] **Filesystem:** True Read/Write support (FAT32/EXT2)
+- [ ] **Filesystem:** True Read/Write support (FAT32/extFAT/EXT4/Brtfs/ZFS)
 - [ ] **Multitasking:** Preemptive scheduling & Ring 3 User Mode
 - [ ] **Connectivity:** Basic TCP/IP Network Stack
 - [ ] **The Least Goal:** Run Doom.
