@@ -7,7 +7,7 @@
 
   [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/your-username/Mithl-OS)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Platform](https://img.shields.io/badge/Platform-x86__64%20%7C%20i686-blue)](https://github.com/your-username/Mithl-OS)
+  [![Platform](https://img.shields.io/badge/Platform-x86__64%20%7C%20i686-blue)](https://github.com/DoguparthiAakash/Mithl-OS)
   [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-orange.svg)](http://makeapullrequest.com)
 
   <p align="center">
@@ -76,7 +76,7 @@ You need a Linux environment (WSL2 works) with:
 ### Installation Steps
 1.  **Clone the Repo**:
     ```bash
-    git clone [https://github.com/your-username/Mithl-OS.git](https://github.com/your-username/Mithl-OS.git)
+    git clone [https://github.com/DoguparthiAakash/Mithl-OS.git](https://github.com/DoguparthiAakash/Mithl-OS.git)
     cd Mithl-OS
     ```
 
