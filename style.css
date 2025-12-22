@@ -48,6 +48,24 @@ ul { list-style: none; }
 
 .hero-content { max-width: 50%; }
 
+/* --- HERO MODIFIER: CENTERED (New Addition) --- */
+/* This class fixes pages that don't have an image on the right */
+.hero.hero-centered {
+    justify-content: center;
+    text-align: center;
+    min-height: 60vh; /* Slightly shorter for text-only pages */
+}
+
+.hero.hero-centered .hero-content {
+    max-width: 800px; /* Limits width for readability */
+    margin: 0 auto;
+}
+
+.hero.hero-centered .cta-group {
+    justify-content: center; /* Centers the buttons */
+}
+/* ---------------------------------------------- */
+
 h1 { font-size: 3.5rem; line-height: 1.1; margin-bottom: 1.5rem; }
 .gradient-text {
     background: linear-gradient(to right, #00c6ff, #0072ff);
@@ -106,7 +124,6 @@ h1 { font-size: 3.5rem; line-height: 1.1; margin-bottom: 1.5rem; }
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
-/* UPDATED: justify-content: flex-end pushes items to the right */
 .window-header { 
     display: flex; 
     gap: 8px; 
