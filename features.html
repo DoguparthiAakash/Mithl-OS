@@ -1,67 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="OSLogo.png" type="image/png">
-    <title>Features | Mithl OS</title>
-<link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Features - Mithl-OS</title>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+    <header>
+        <nav>
+            <div class="logo">Mithl-OS</div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="features.html" class="active">Features</a>
+                <a href="contribute.html">Contribute</a>
+            </div>
+        </nav>
+    </header>
 
-    <nav class="glass-nav">
-        <div class="logo">
-            <img src="OSLogo.png" alt="Mithl OS" style="height: 40px; vertical-align: middle; margin-right: 8px; border-radius: 50%;"> 
-            Mithl OS
+    <main class="container">
+        <section style="margin-bottom: 4rem;">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem;">Architecture & Features</h1>
+            <p style="color: var(--text-muted); font-size: 1.2rem;">How we merged Linux reliability with AI innovation.
+            </p>
+        </section>
+
+        <div class="grid">
+            <div class="card">
+                <h3>🧠 Semantic Agent Core</h3>
+                <p>At the heart of Mithl-OS is <code>mithl_core.ko</code>, a kernel module that maintains a registry of
+                    Intelligent Agents. Unlike standard processes, Agents register "Intents" (e.g., Image Generation,
+                    Code Analysis) that the system can query instantly.</p>
+            </div>
+            <div class="card">
+                <h3>🐧 Linux Helper Architecture</h3>
+                <p>We use the Linux Kernel as an advanced Hardware Abstraction Layer. This means you get full support
+                    for NVMe drives, Wi-Fi 6, and modern GPUs without sacrificing the custom Mithl experience.</p>
+            </div>
+            <div class="card">
+                <h3>⚡ Direct Framebuffer UI</h3>
+                <p>Our custom Compositor bypasses heavy display servers like X11 or Wayland, writing directly to the GPU
+                    Framebuffer for maximum efficiency and zero input lag. Ideal for high-performance creative work.</p>
+            </div>
+            <div class="card">
+                <h3>🗣 Natural Language Shell</h3>
+                <p>The system shell isn't just Bash. It's an Agent Interface. Type "Edit the website config" and the
+                    Semantic Core resolves the intent to the correct file and application context.</p>
+            </div>
         </div>
+    </main>
 
-        <ul class="nav-links">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="features.html" class="active">Features & Tech</a></li>
-            <li><a href="contribute.html">Contribute</a></li>
-            <li><a href="https://github.com/DoguparthiAakash/Mithl-OS" target="_blank">GitHub</a></li>
-        </ul>
-    </nav>
-
-    <section class="content-page">
-        <h1>Under the Hood</h1>
-        <p class="subtitle">A deep dive into the architecture of Mithl OS.</p>
-
-        <div class="tech-grid">
-            <div class="tech-item">
-                <h3>🖥️ Graphics Engine</h3>
-                <p>We don't use X11 or Wayland. Our custom compositor supports alpha blending, VESA linear framebuffers, and double buffering to eliminate screen tearing.</p>
-            </div>
-            <div class="tech-item">
-                <h3>💾 Memory Management</h3>
-                <p>Features a custom Physical Memory Manager (PMM) using a bitmap allocator and a Virtual Memory Manager (VMM) handling paging.</p>
-            </div>
-            <div class="tech-item">
-                <h3>🔌 Driver Support</h3>
-                <p>Native drivers for PS/2 Keyboards, Mouse, ACPI Power Management, and Serial Ports for debugging.</p>
-            </div>
-            <div class="tech-item">
-                <h3>🦀 Rust Integration</h3>
-                <p>We are slowly replacing critical C drivers with Rust to prevent buffer overflows and memory leaks at the kernel level.</p>
-            </div>
-        </div>
-
-        <div class="roadmap-section">
-            <h2>Current Roadmap</h2>
-            <ul class="checklist">
-                <li class="done">Bootloader & GDT Setup</li>
-                <li class="done">VESA Graphics & UI</li>
-                <li>Write/Read File System Support</li>
-                <li>Preemptive Multitasking</li>
-                <li>Run DOOM</li>
-            </ul>
-        </div>
-    </section>
-    
     <footer>
-        <p>Crafted with ❤️ by Aakash & The Open Source Community.</p>
+        <p>&copy; 2025 Mithl-OS Project.</p>
     </footer>
-
 </body>
+
 </html>

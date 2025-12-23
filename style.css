@@ -1,260 +1,160 @@
-/* --- GLOBAL RESET --- */
+:root {
+    --primary: #008080;
+    --primary-dark: #004d4d;
+    --accent: #00ffff;
+    --bg: #0a0a0a;
+    --surface: #1a1a1a;
+    --text: #ffffff;
+    --text-muted: #a0a0a0;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
-    background: #0f0c29;
-    background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
-    color: #fff;
-    overflow-x: hidden;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+}
+
+header {
+    background: rgba(10, 10, 10, 0.8);
+    backdrop-filter: blur(10px);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+nav {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.05em;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s;
+    font-size: 0.95rem;
+}
+
+.nav-links a:hover, .nav-links a.active {
+    color: var(--accent);
+}
+
+main {
+    padding-top: 80px; /* Header space */
     min-height: 100vh;
 }
 
-a { text-decoration: none; color: inherit; transition: 0.3s; }
-ul { list-style: none; }
-
-/* --- GLASS NAVIGATION --- */
-.glass-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 5%;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-.logo { font-size: 1.5rem; font-weight: bold; letter-spacing: 1px; }
-
-.nav-links { display: flex; gap: 2rem; }
-.nav-links a { color: rgba(255, 255, 255, 0.7); font-weight: 500; }
-.nav-links a:hover, .nav-links a.active { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-
-/* --- HERO SECTION --- */
+/* Hero Section */
 .hero {
+    height: 80vh;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 5rem 10%;
-    min-height: 80vh;
-}
-
-.hero-content { max-width: 50%; }
-
-/* --- HERO MODIFIER: CENTERED --- */
-.hero.hero-centered {
+    flex-direction: column;
     justify-content: center;
+    align-items: center;
     text-align: center;
-    min-height: 60vh; 
+    background: radial-gradient(circle at center, #001a1a 0%, var(--bg) 70%);
+    padding: 2rem;
 }
 
-.hero.hero-centered .hero-content {
-    max-width: 800px; 
-    margin: 0 auto;
-}
-
-.hero.hero-centered .cta-group {
-    justify-content: center; 
-}
-
-h1 { font-size: 3.5rem; line-height: 1.1; margin-bottom: 1.5rem; }
-.gradient-text {
-    background: linear-gradient(to right, #00c6ff, #0072ff);
+.hero h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(to right, #fff, #a0a0a0);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-.hero p { font-size: 1.2rem; color: #ccc; margin-bottom: 2rem; line-height: 1.6; }
-
-.badge {
-    background: rgba(0, 198, 255, 0.1);
-    color: #00c6ff;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    display: inline-block;
-    margin-bottom: 1rem;
-    border: 1px solid rgba(0, 198, 255, 0.3);
+.hero p {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin-bottom: 2rem;
 }
-
-/* --- BUTTONS --- */
-.cta-group { display: flex; gap: 1rem; }
 
 .btn {
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: none;
+    cursor: pointer;
 }
 
-.btn-primary { background: #0072ff; color: white; box-shadow: 0 0 20px rgba(0, 114, 255, 0.4); }
-.btn-primary:hover { background: #00c6ff; transform: translateY(-2px); }
-
-.btn-secondary { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
-.btn-secondary:hover { background: rgba(255,255,255,0.2); }
-
-/* --- GLASS CARD VISUAL --- */
-.hero-visual { position: relative; }
-.float-anim { animation: float 6s ease-in-out infinite; }
-
-@keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-    100% { transform: translateY(0px); }
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(0, 128, 128, 0.4);
 }
 
-.glass-card {
-    background: rgba(20, 20, 20, 0.6);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 1.5rem;
-    width: 400px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+.btn-primary:hover {
+    transform: translateY(-2px);
+    background: var(--primary-dark);
 }
 
-.window-header { 
-    display: flex; 
-    gap: 8px; 
-    margin-bottom: 1rem; 
-    justify-content: flex-end; 
+/* Grid Layouts */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
 }
 
-.dot { width: 12px; height: 12px; border-radius: 50%; }
-.red { background: #ff5f56; }
-.yellow { background: #ffbd2e; }
-.green { background: #27c93f; }
-
-.terminal-content { font-family: 'Courier New', monospace; color: #ddd; }
-.blink { animation: blink 1s infinite; }
-@keyframes blink { 50% { opacity: 0; } }
-.blue { color: #00c6ff; }
-.green { color: #27c93f; }
-
-/* --- TEASER & FEATURES --- */
-.teaser, .content-page { padding: 4rem 10%; text-align: center; }
-.content-page { text-align: left; }
-
-.grid, .tech-grid {
+.grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
-    margin-top: 3rem;
 }
 
-.card, .tech-item {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.05);
+.card {
+    background: var(--surface);
     padding: 2rem;
-    border-radius: 16px;
-    transition: 0.3s;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform 0.3s;
 }
 
-.card:hover, .tech-item:hover {
-    background: rgba(255,255,255,0.08);
+.card:hover {
     transform: translateY(-5px);
-    border-color: rgba(0, 198, 255, 0.3);
+    border-color: var(--primary);
 }
 
-.card i { font-size: 2rem; color: #00c6ff; margin-bottom: 1rem; }
-.card h3, .tech-item h3 { margin-bottom: 0.5rem; }
-.card p, .tech-item p { color: #aaa; font-size: 0.95rem; line-height: 1.5; }
-
-/* --- ROADMAP --- */
-.roadmap-section { margin-top: 4rem; background: rgba(0,0,0,0.2); padding: 2rem; border-radius: 12px; }
-.checklist li {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--accent);
 }
-.checklist li::before { content: "⭕"; font-size: 0.8rem; }
-.checklist li.done::before { content: "✅"; }
-.checklist li.done { color: #aaa; text-decoration: line-through; }
 
-/* --- FOOTER --- */
 footer {
     text-align: center;
     padding: 2rem;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    margin-top: 4rem;
-    color: #666;
-}
-
-/* ========================================
-   --- RESPONSIVE MEDIA QUERIES --- 
-   This makes the site work on Mobile/Tablet
-   ========================================
-*/
-
-/* For Tablets and Mobile Phones (Screens smaller than 768px) */
-@media (max-width: 768px) {
-    
-    /* 1. Stack the Navigation Bar */
-    .glass-nav {
-        flex-direction: column;
-        padding: 1rem;
-    }
-    
-    .nav-links {
-        margin-top: 1rem;
-        gap: 1.5rem;
-        flex-wrap: wrap;
-        justify-content: center;
-        width: 100%;
-    }
-
-    /* 2. Stack the Hero Section (Text Top, Image Bottom) */
-    .hero {
-        flex-direction: column;
-        text-align: center;
-        padding: 6rem 5% 3rem 5%; /* More top padding for nav space */
-    }
-
-    .hero-content {
-        max-width: 100%; /* Use full width on mobile */
-    }
-
-    /* 3. Adjust Font Sizes */
-    h1 {
-        font-size: 2.5rem; /* Make big text slightly smaller */
-    }
-
-    .hero p {
-        font-size: 1rem;
-    }
-
-    /* 4. Center the Buttons */
-    .cta-group {
-        justify-content: center;
-        flex-wrap: wrap; /* Stack buttons if screen is VERY small */
-    }
-
-    /* 5. Fix the Glass Card/Terminal Image */
-    .hero-visual {
-        margin-top: 3rem;
-        width: 100%;
-        display: flex;
-        justify-content: center;
-    }
-
-    .glass-card {
-        width: 100%; /* Fit to screen width */
-        max-width: 350px;
-    }
-
-    /* 6. Fix Content Padding */
-    .teaser, .content-page {
-        padding: 3rem 5%;
-    }
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    font-size: 0.9rem;
 }

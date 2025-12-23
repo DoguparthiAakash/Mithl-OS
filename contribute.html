@@ -1,86 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <link rel="icon" href="OSLogo.png" type="image/png">
-    <title>Contribute | Mithl OS</title>
+    <title>Contribute - Mithl-OS</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body>
-
-    <nav class="glass-nav">
-        <div class="logo">
-            <img src="OSLogo.png" alt="Mithl OS" style="height: 40px; vertical-align: middle; margin-right: 8px; border-radius: 50%;"> 
-            Mithl OS
-        </div>
-
-        <ul class="nav-links">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="features.html">Features & Tech</a></li>
-            <li><a href="contribute.html" class="active">Contribute</a></li>
-            <li><a href="https://github.com/DoguparthiAakash/Mithl-OS" target="_blank">GitHub</a></li>
-        </ul>
-    </nav>
-
-    <header class="hero hero-centered">
-        <div class="hero-content">
-            <span class="badge">Open Source Community</span>
-            <h1>Become an <span class="gradient-text">Architect.</span></h1>
-            <p>Mithl OS is built by people like you. Whether you write low-level C code, design icons, or just love testing new software, there is a place for you here.</p>
-            
-            <div class="cta-group">
-                <a href="https://github.com/DoguparthiAakash/Mithl-OS/issues" class="btn btn-primary">
-                    <i class="fas fa-code-branch"></i> View Open Issues
-                </a>
+    <header>
+        <nav>
+            <div class="logo">Mithl-OS</div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="features.html">Features</a>
+                <a href="contribute.html" class="active">Contribute</a>
             </div>
-        </div>
+        </nav>
     </header>
 
-    <section class="teaser">
-        <h2>You can do these or Simple or Further or What you know to do or Beyond these:</h2>
-        <div class="grid">
-            <div class="card">
-                <i class="fas fa-cogs"></i>
-                <h3>Kernel Developments</h3>
-                <p>Help us implement the VFS (Virtual File System) and improve our Paging algorithms in C & Assembly.</p>
-            </div>
-            <div class="card">
-                <i class="fab fa-rust"></i>
-                <h3>Rustaceans</h3>
-                <p>We are porting critical drivers to Rust for memory safety. Help us rewrite the PS/2 and ACPI drivers.</p>
-            </div>
-            <div class="card">
-                <i class="fas fa-paint-brush"></i>
-                <h3>UI Designers</h3>
-                <p>Mithl OS needs a unique identity. Help design icons, wallpapers, and window themes.</p>
-            </div>
-            <div class="card">
-                <i class="fas fa-store"></i>
-                <h3>App Ecosystem</h3>
-                <p>We need an <b>App Store</b>! Help us build the package manager and create native apps (Calculator, Media Player, Games) for the OS.</p>
-            </div>
-        </div>
-    </section>
+    <main class="container">
+        <div style="max-width: 800px; margin: 0 auto;">
+            <h1>Join the Evolution</h1>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">Mithl-OS is an ambitious project to redefine the
+                OS. We need visionaries.</p>
 
-    <section class="content-page">
-        <h2>How to Contribute</h2>
-        <div class="roadmap-section">
-            <ul class="checklist">
-                <li class="done" style="text-decoration: none; color: #fff;">1. <b>Fork</b> the repository on GitHub.</li>
-                <li class="done" style="text-decoration: none; color: #fff;">2. <b>Clone</b> it to your local machine.</li>
-                <li class="done" style="text-decoration: none; color: #fff;">3. Create a <b>Branch</b> (e.g., `git checkout -b feature/new-driver`).</li>
-                <li class="done" style="text-decoration: none; color: #fff;">4. <b>Commit</b> your changes and push.</li>
-                <li class="done" style="text-decoration: none; color: #fff;">5. Open a <b>Pull Request</b>!</li>
-            </ul>
+            <div class="card" style="margin-bottom: 2rem;">
+                <h3>🛠 Kernel Development</h3>
+                <p>Help us expand the <code>mithl_core</code> Linux Kernel Module. We need optimization of the Intent
+                    Registry and integration with `procfs` for deeper system control.</p>
+            </div>
+
+            <div class="card" style="margin-bottom: 2rem;">
+                <h3>🎨 UI & UX Design</h3>
+                <p>Our Framebuffer Compositor is raw and powerful. Help us implement advanced shaders, smooth
+                    animations, and a design language that screams "Future".</p>
+            </div>
+
+            <div class="card" style="margin-bottom: 2rem;">
+                <h3>🤖 Agent Creation</h3>
+                <p>Build the first wave of Native Agents. Create tools that hook into the Semantic Core to provide
+                    services like "Summarize Email" or "Optimize Network" directly to the OS.</p>
+            </div>
+
+            <h2>How to Build</h2>
+            <pre
+                style="background: #000; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; overflow-x: auto; color: var(--accent);">
+# Clone the repository
+git clone https://github.com/DoguparthiAakash/Mithl-OS.git
+cd Mithl-OS
+
+# Build the Core
+cd modules/mithl_core && make
+
+# Build the UI
+cd ../../userspace/gui && make
+
+# Run (requires sudo for fb0 access)
+sudo ./compositor
+            </pre>
         </div>
-    </section>
+    </main>
 
     <footer>
-        <p>Crafted with ❤️ by Aakash & The Open Source Community.</p>
+        <p>&copy; 2025 Mithl-OS Project.</p>
     </footer>
-
 </body>
+
 </html>

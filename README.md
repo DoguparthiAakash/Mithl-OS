@@ -1,158 +1,58 @@
-<div align="center">
+# Mithl-OS
+> **The AI-Native Hybrid Operating System**
 
-  <br />
-  <img src="OSLogo.png" alt="Mithl OS Logo" width="300" height="300">
-   
-  <h1 align="center">Mithl OS 🚀</h1>
+![Mithl-OS Logo](OSLogo.png)
 
-  <p align="center">
-    <b>The Next-Generation Independent Operating System</b><br/>
-    Built from scratch in C, Assembly & Rust. No Linux. No Unix. Just Code.
-    <br />
-    <br />
-    <a href="https://github.com/DoguparthiAakash/Mithl-OS/releases"><strong>⬇️ Download ISO</strong></a>
-    ·
-    <a href="#-under-the-hood-technical-specs"><strong>📖 Read Docs</strong></a>
-    ·
-    <a href="#-contributing"><strong>🤝 Join Development</strong></a>
-  </p>
-
-  <p align="center">
-    <a href="https://github.com/DoguparthiAakash/Mithl-OS/actions">
-      <img src="https://img.shields.io/badge/build-passing-brightgreen?style=flat-square" alt="Build Status" />
-    </a>
-    <a href="https://opensource.org/licenses/MIT">
-      <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License" />
-    </a>
-    <a href="https://github.com/DoguparthiAakash/Mithl-OS">
-      <img src="https://img.shields.io/badge/Platform-x86__64%20%7C%20i686-blue?style=flat-square" alt="Platform" />
-    </a>
-    <a href="http://makeapullrequest.com">
-      <img src="https://img.shields.io/badge/PRs-welcome-orange.svg?style=flat-square" alt="PRs Welcome" />
-    </a>
-  </p>
-   
-  <p align="center">
-    <b>Built from Scratch</b> • <b>No Linux Kernel</b> • <b>Glassmorphism UI</b>
-  </p>
-
-</div>
+**Mithl-OS** is a next-generation operating system designed to bridge the gap between **Artificial Intelligence** and **System Hardware**. Built on a hybrid architecture, it leverages the rock-solid stability of the **Linux Kernel** while introducing a novel **Semantic Agent Core** and a custom, high-performance **Teal UI**.
 
 ---
 
-## 🌟 Vision & Philosophy
+## 🌌 The Vision
+Most operating systems see files and processes. **Mithl-OS sees Intents.**
+Instead of clicking icons to execute binaries, Mithl-OS allows you to interact with your computer conceptually. 
+* "Play a game" -> Launches Doom.
+* "Edit this" -> Opens the context-appropriate editor.
 
-**Mithl OS** is a passion project built entirely from the ground up to push the boundaries of custom operating systems.
+## 🏗 Hybrid Architecture
+Mithl-OS uses a unique "Helper" architecture to provide industry-standard features without losing its unique identity.
 
-Unlike many OSDev projects that stop at a command line, Mithl OS delivers a **Full Desktop Environment** immediately after boot. It is not based on Linux, Unix, or any existing kernel—every line of code, from the bootloader to the graphical interface, has been crafted to deliver a unique experience.
+1.  **The Foundation (Linux Helper)**: We utilize a stripped-down Linux Kernel as our Hardware Abstraction Layer. This ensures robust support for modern Wi-Fi, USB, and GPUs out of the box.
+2.  **The Soul (Mithl Core)**: A custom Kernel Module (`mithl_core.ko`) that injects our Semantic Registry and Intent Processing logic directly into the kernel's heart.
+3.  **The Face (Mithl GUI)**: A lightweight, custom-written Compositor that renders our signature Teal Desktop Environment directly to the Framebuffer (`/dev/fb0`), bypassing the bloat of X11 or Wayland.
 
-We prioritize:
-* **Independence:** A completely custom kernel (C/Asm/Rust) and userspace.
-* **Visual Polish:** A unique design language featuring glassmorphism, rounded corners, and smooth typography.
-* **Modern Standards:** UEFI Boot (Multiboot2), ACPI Power Management, and VESA High-Res Graphics.
-
----
-
-## 🎨 The Experience
-
-![Mithl OS Demo](demo.gif)
-
-### 🖥️ The Desktop Environment
-We built our own **Compositor** from scratch to avoid the bloat of X11 or Wayland.
-* **Visuals:** Custom graphics engine supporting alpha blending and "Frosted Glass" effects.
-* **Unified Workspace:** A centralized hub for launching apps.
-* **Floating Dock:** Elegant application management.
-
-### 📂 Productivity Tools
-* **File Manager:** Grid view with ZFS-structure awareness (preparing for OpenZFS).
-* **Mithl Text Editor:** A native coding tool with line numbers, status bars, and full keyboard support.
-
----
-
-## 🔧 Under the Hood (Tech Stack)
-
-For the engineers, here is what makes Mithl OS tick:
-
-| Component | Technology | Description |
-| :--- | :--- | :--- |
-| **Kernel** | **C, C+++ & Assembly** | The core foundation for speed and robustness. |
-| **Safety** | **Rust** | Currently integrating Rust for memory-safe driver development. |
-| **Boot** | **Multiboot2** | Supports both Legacy BIOS and UEFI systems. |
-| **Memory** | **PMM & VMM** | Custom bitmap allocator and paging system. |
-| **Drivers** | **ACPI & PS/2** | Custom parsers for power management and input handling. |
-
----
+## ✨ Key Features
+*   **Semantic Syscalls**: A new class of System Calls (`sys_agent_op`) allows applications to query the kernel for capabilities, not just files.
+*   **Instant On**: Optimized boot sequence that launches directly into the Mithl GUI.
+*   **Professional Creative**: A distraction-free, aesthetically pleasing environment designed for creators and developers.
+*   **Industry Ready**: Capable of running standard Linux tools and workflows alongside Mithl-native AI agents.
 
 ## 🚀 Getting Started
 
-Want to run Mithl OS? It's easy!
-
 ### Prerequisites
-You need a Linux environment (WSL2 works) with:
-* `gcc` (or `i686-elf-gcc`), `nasm`, `make`
-* `xorriso` (for ISO creation)
-* `qemu-system-x86_64` (for emulation)
+*   A Linux environment (for building).
+*   GCC and Make.
+*   Linux Kernel Headers (for the LKM).
 
-### Installation Steps
+### Build Instructions
 
-1.  **Clone the Repo**:
-    ```bash
-    git clone [https://github.com/DoguparthiAakash/Mithl-OS.git](https://github.com/DoguparthiAakash/Mithl-OS.git)
-    cd Mithl-OS
-    ```
+**1. Build the Semantic Core (Brain)**
+```bash
+cd modules/mithl_core
+make
+sudo insmod mithl_core.ko
+```
 
-2.  **Compile & Run (UEFI/BIOS Hybrid)**:
-    This command builds the kernel, creates a bootable ISO, and launches QEMU.
-    ```bash
-    make run-uefi
-    ```
+**2. Build the Desktop (Face)**
+```bash
+cd userspace/gui
+make
+sudo ./compositor
+```
 
-3.  **Generate ISO**:
-    ```bash
-    make iso
-    ```
-
----
-
-## 🗺️ Roadmap
-
-We are building in public. Here is our current status:
-
-- [x] **Core:** Bootloader & GDT/IDT Initialization
-- [x] **Graphics:** VESA Linear Framebuffer & Custom Compositor
-- [ ] **Filesystem:** True Read/Write support (FAT32, exFAT, EXT4, Btrfs, ZFS)
-- [ ] **Multitasking:** Preemptive scheduling & Ring 3 User Mode
-- [ ] **Connectivity:** Basic TCP/IP Network Stack
-- [ ] **The Least Goal:** Run Doom.
-- [ ] **The Actual Goal:** To make it usable by all, like Linux and other major OSs, without dissatisfaction.
-- [ ] **The Ultimate Goal:** Handle and use extreme complex tasks without panic or lag.
+## 🤝 Contribute
+Mithl-OS is an open creative project. content creators, kernel hackers, and AI researchers are welcome.
+Check `contribute.html` for guidelines.
 
 ---
 
-## 🤝 How to Contribute
-
-**Mithl OS is open for everyone**, whether you are a kernel expert or a student learning C.
-
-**We are specifically looking for help with:**
-1.  **Rust Integration:** Helping us move more drivers to Rust.
-2.  **UI Design:** Refining icons and window themes.
-3.  **Testing:** Running the ISO on real hardware and reporting logs.
-4.  **Core Development:** Adding functions and features to make it happen.
-5.  **App Ecosystem:** Building, developing, and converting apps to run natively on the OS.
-
-**Steps to Contribute:**
-1.  Fork the repo.
-2.  Create a branch (`git checkout -b feature/cool-thing`).
-3.  Commit your changes.
-4.  Open a Pull Request!
-
----
-
-## ❤️ Community & License
-
-**Mithl OS** is open-source software licensed under the **MIT License**.
-
-> **A Note from the Creator:**
-> *This OS was born out of pure curiosity. It is a non-profit, community-driven project. If you are willing to use the code, contribute to the kernel, or help us grow into something like Linux or other platforms, you are heartily welcomed. Let's build something amazing together.*
->
-> *Crafted with ❤️ and caffeine by Aakash and the Open Source Community.*
+*Mithl-OS: Redefining the Human-Computer Bond.*

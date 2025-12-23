@@ -1,0 +1,34 @@
+# Build Artifacts
+*.o
+*.ko
+*.mod.c
+*.order
+*.symvers
+*.elf
+*.bin
+*.out
+
+# Disk Images (Too large for Git)
+*.img
+*.iso
+*.vhd
+*.vdi
+*.qcow2
+
+# Third Party / Large Assets
+DOOM1.WAD
+legacy/*.img
+legacy/*.iso
+legacy/DOOM1.WAD
+
+# Temporary Directories
+bootiso/
+build/
+dist/
+tmp/
+.vscode/
+.idea/
+
+# System
+.DS_Store
+Thumbs.db
