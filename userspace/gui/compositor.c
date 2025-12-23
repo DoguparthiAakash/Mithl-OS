@@ -36,9 +36,17 @@ void put_pixel(int x, int y, uint32_t color) {
     long int location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) +
                         (y+vinfo.yoffset) * finfo.line_length;
     
-    // Assume 32bpp (BGRA or ARGB)
-    // Linux FB usually BGRA on x86, but we'll write 32bit int
-    *((uint32_t*)(fbp + location)) = color;
+    // Handle Bit Depths
+    if (vinfo.bits_per_pixel == 32) {
+        *((uint32_t*)(fbp + location)) = color;
+    } else if (vinfo.bits_per_pixel == 24) {
+        // Write 3 bytes (BGR/RGB)
+        // Assuming BGRA input color 0xAARRGGBB -> write B, G, R
+        uint8_t *ptr = (uint8_t*)(fbp + location);
+        ptr[0] = color & 0xFF;        // Blue
+        ptr[1] = (color >> 8) & 0xFF; // Green
+        ptr[2] = (color >> 16) & 0xFF;// Red
+    }
 }
 
 void draw_rect_filled(int x, int y, int w, int h, uint32_t color) {
