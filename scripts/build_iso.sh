@@ -31,6 +31,40 @@ else
     exit 1
 fi
 
+# Copy Shared Libraries (Dynamically Linked Compositor)
+echo "[Mithl-OS] Copying Userspace Libraries..."
+mkdir -p "$INITRD_DIR/lib/x86_64-linux-gnu"
+mkdir -p "$INITRD_DIR/lib64"
+
+# Dependencies found via ldd
+LIBS=(
+    "libdrm.so.2"
+    "libc.so.6"
+    "libinput.so.10"
+    "libudev.so.1"
+    "libmtdev.so.1"
+    "libevdev.so.2"
+    "libm.so.6"
+    "libwacom.so.9"
+    "libcap.so.2"
+    "libgudev-1.0.so.0"
+    "libgobject-2.0.so.0"
+    "libglib-2.0.so.0"
+    "libffi.so.8"
+    "libatomic.so.1"
+    "libpcre2-8.so.0"
+)
+
+for lib in "${LIBS[@]}"; do
+    if [ -f "/lib/x86_64-linux-gnu/$lib" ]; then
+        cp "/lib/x86_64-linux-gnu/$lib" "$INITRD_DIR/lib/x86_64-linux-gnu/"
+    else
+        echo "Warning: Library $lib not found!"
+    fi
+done
+
+cp /lib64/ld-linux-x86-64.so.2 "$INITRD_DIR/lib64/"
+
 # Copy Busybox
 BUSYBOX=$(which busybox)
 if [ -f "$BUSYBOX" ]; then
@@ -54,10 +88,10 @@ cat > "$INITRD_DIR/init" << 'EOF'
 # Mount essential filesystems
 mount -t proc none /proc
 mount -t sysfs none /sys
-mount -t devtmpfs none /dev
+# mount -t devtmpfs none /dev (Use static nodes for debug)
 
 echo "--------------------------------"
-echo "   Welcome to Mithl-OS Hybrid   "
+echo "      Welcome to Mithl-OS       "
 echo "--------------------------------"
 
 # Load Semantic Core Driver

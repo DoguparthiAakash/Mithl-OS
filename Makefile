@@ -21,7 +21,7 @@ iso: core gui
 run: iso
 	qemu-system-x86_64 -kernel ./kernel.img \
 		-initrd boot/initramfs.cpio.gz \
-		-append "console=ttyS0 vga=792" \
+		-append "console=ttyS0 console=tty0 vga=792" \
 		-m 512 \
 		-serial stdio \
 		-vga std
