@@ -258,7 +258,9 @@ void kmain(uint32_t magic, void* addr)
     // Launch Userspace Hello App (The "Daily Driver" test)
     // Assumes ramfs loaded it at /hello.elf
     // process_create_elf("Hello", "/hello.elf");
-    process_create_elf("Calculator", "/calculator.elf");
+    // process_create_elf("Calculator", "/calculator.elf");
+    // process_create_elf("ls", "/ls.elf");
+    process_create_elf("ps", "/ps.elf", "");
     
     // Enable Interrupts (PIT will drive preemption)
     asm volatile("sti");

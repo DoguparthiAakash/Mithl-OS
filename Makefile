@@ -182,8 +182,29 @@ userspace/apps/hello/hello.elf: userspace/apps/hello/hello.c $(LIBC_OBJS)
 userspace/apps/calculator/calculator.elf: userspace/apps/calculator/main.c $(LIBC_OBJS)
 	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
 
+userspace/apps/ls/ls.elf: userspace/apps/ls/ls.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
+userspace/apps/ps/ps.elf: userspace/apps/ps/ps.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
+userspace/apps/cat/cat.elf: userspace/apps/cat/cat.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
+userspace/apps/mkdir/mkdir.elf: userspace/apps/mkdir/mkdir.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
+userspace/apps/cp/cp.elf: userspace/apps/cp/cp.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
+userspace/apps/mv/mv.elf: userspace/apps/mv/mv.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
+userspace/apps/cc/cc.elf: userspace/apps/cc/cc.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
 # Create bootable ISO (BIOS only for now)
-iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calculator.elf
+iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calculator.elf userspace/apps/ls/ls.elf userspace/apps/ps/ps.elf userspace/apps/cat/cat.elf userspace/apps/mkdir/mkdir.elf userspace/apps/cp/cp.elf userspace/apps/mv/mv.elf userspace/apps/cc/cc.elf
 	rm -rf bootiso
 	mkdir -p bootiso/boot/grub
 	cp kernel.elf bootiso/boot/
@@ -213,6 +234,53 @@ iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calcula
 	if [ -f userspace/apps/calculator/calculator.elf ]; then \
 	  cp userspace/apps/calculator/calculator.elf bootiso/boot/; \
 	  echo '  module2 /boot/calculator.elf calculator.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+	
+	# Add LS App
+	if [ -f userspace/apps/ls/ls.elf ]; then \
+	  cp userspace/apps/ls/ls.elf bootiso/boot/; \
+	  echo '  module2 /boot/ls.elf ls.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+	
+	# Add PS App
+	if [ -f userspace/apps/ps/ps.elf ]; then \
+	  cp userspace/apps/ps/ps.elf bootiso/boot/; \
+	  echo '  module2 /boot/ps.elf ps.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+	
+	# Add CAT App
+	if [ -f userspace/apps/cat/cat.elf ]; then \
+	  cp userspace/apps/cat/cat.elf bootiso/boot/; \
+	  echo '  module2 /boot/cat.elf cat.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+	
+	# Add MKDIR App
+	if [ -f userspace/apps/mkdir/mkdir.elf ]; then \
+	  cp userspace/apps/mkdir/mkdir.elf bootiso/boot/; \
+	  echo '  module2 /boot/mkdir.elf mkdir.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+
+	# Add CP App
+	if [ -f userspace/apps/cp/cp.elf ]; then \
+	  cp userspace/apps/cp/cp.elf bootiso/boot/; \
+	  echo '  module2 /boot/cp.elf cp.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+
+	# Add MV App
+	if [ -f userspace/apps/mv/mv.elf ]; then \
+	  cp userspace/apps/mv/mv.elf bootiso/boot/; \
+	  echo '  module2 /boot/mv.elf mv.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+
+	# Add CC App
+	if [ -f userspace/apps/cc/cc.elf ]; then \
+	  cp userspace/apps/cc/cc.elf bootiso/boot/; \
+	  echo '  module2 /boot/cc.elf cc.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+	
+	if [ -f userspace/apps/cc/test.c ]; then \
+	  cp userspace/apps/cc/test.c bootiso/boot/; \
+	  echo '  module2 /boot/test.c test.c' >> bootiso/boot/grub/grub.cfg; \
 	fi
 	
 	echo '  boot' >> bootiso/boot/grub/grub.cfg

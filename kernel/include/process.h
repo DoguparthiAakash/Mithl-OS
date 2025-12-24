@@ -18,6 +18,7 @@ struct fs_node;
 typedef struct process {
     int pid;                    // Process ID
     char name[32];              // Process Name
+    char cmdline[128];          // Command Line Arguments
     process_state_t state;      // Current State
     
     uint32_t esp;               // Stack Pointer
@@ -44,10 +45,20 @@ typedef struct process {
 // Process Manager Functions
 void process_init(void);
 process_t *process_create(const char *name, void (*entry_point)(void));
-process_t *process_create_elf(const char *name, const char *filename);
+process_t *process_create(const char *name, void (*entry_point)(void));
+process_t *process_create_elf(const char *name, const char *filename, const char *args);
 void process_schedule(void);
 void process_yield(void);
 void process_exit(void);
 void process_init_main_thread(void);
+
+// Helper struct for Listing (must match userspace)
+typedef struct {
+    int pid;
+    char name[32];
+    int state;
+} process_info_t;
+
+int process_get_list(process_info_t *buf, int max_count);
 
 #endif

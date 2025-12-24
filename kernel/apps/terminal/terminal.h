@@ -26,5 +26,6 @@ terminal_t *terminal_create(void);
 void terminal_run_command(terminal_t *term, const char *command);
 void terminal_run_command_active(const char *command);
 void terminal_print(terminal_t *term, const char *str);
+void terminal_active_write(const char *buf, uint32_t len);
 
 #endif // TERMINAL_H

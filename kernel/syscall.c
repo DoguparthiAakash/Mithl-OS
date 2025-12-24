@@ -53,6 +53,10 @@ void syscall_handler(registers_t *regs) {
                      for (uint32_t i = 0; i < count; i++) {
                         console_putc(buf[i]);
                      }
+                     // Redirect to GUI Terminal if active
+                     extern void terminal_active_write(const char *buf, uint32_t len);
+                     terminal_active_write(buf, count);
+                     
                      ret = count;
                 } else if (current_process && fd >= 0 && fd < 256 && current_process->fd_table[fd]) {
                      // Read from FILE? SYS_WRITE to FILE?
@@ -163,6 +167,57 @@ void syscall_handler(registers_t *regs) {
                 
                 // Should not reach here
                 while(1);
+            }
+            break;
+
+        case 12: // SYS_READDIR (fd, dirent_buf)
+            {
+                int fd = regs->ebx;
+                struct dirent *user_dirent = (struct dirent*)regs->ecx;
+                
+                if (current_process && fd >= 0 && fd < 256 && current_process->fd_table[fd]) {
+                    struct file_descriptor *desc = current_process->fd_table[fd];
+                    if (desc->node) {
+                        // Use offset as index
+                        struct dirent *d = readdir_fs(desc->node, desc->offset);
+                        if (d) {
+                             // Copy to user buffer
+                             // In real OS, check pointers!
+                             // struct dirent is small (128 char + uint)
+                             // We need to copy content.
+                             // *user_dirent = *d; // Struct copy
+                             // But wait, `d` is kernel pointer from readdir_fs (static or malloc?)
+                             // readdir_fs usually returns pointer to static or internal.
+                             // Let's copy safely.
+                             strcpy(user_dirent->name, d->name);
+                             user_dirent->ino = d->ino;
+                             
+                             desc->offset++;
+                             ret = 1; // Success
+                        } else {
+                             ret = 0; // EOF
+                        }
+                    } else {
+                        ret = -1;
+                    }
+                } else {
+                    ret = -1;
+                }
+            }
+            break;
+            
+        case 106: // SYS_PROCESS_LIST (buf, max)
+            {
+                process_info_t *buf = (process_info_t*)regs->ebx;
+                int max = regs->ecx;
+                
+                // Security check needed for buf ptr in real OS
+                
+                if (buf && max > 0) {
+                     ret = process_get_list(buf, max);
+                } else {
+                     ret = -1;
+                }
             }
             break;
 
@@ -287,6 +342,145 @@ void syscall_handler(registers_t *regs) {
             }
             break;
             
+        case 107: // SYS_GET_CMDLINE (from previous task, just ensuring location)
+             // Already added.
+             break; 
+
+        case 108: // SYS_MKDIR (path, mode)
+            {
+                char *path = (char*)regs->ebx;
+                uint32_t mode = regs->ecx;
+                
+                // 1. Separate Parent and Child
+                // Find last slash
+                char *last_slash = NULL;
+                char *p = path;
+                while(*p) {
+                    if (*p == '/') last_slash = p;
+                    p++;
+                }
+                
+                fs_node_t *parent = NULL;
+                char *child_name = NULL;
+                
+                if (last_slash) {
+                    // Split
+                    *last_slash = 0; // Temp modify
+                    char *parent_path = path;
+                    if (parent_path[0] == 0) parent_path = "/"; // was "/foo" -> "" "foo"
+                    
+                    child_name = last_slash + 1;
+                    parent = vfs_resolve_path(parent_path);
+                    
+                    *last_slash = '/'; // Restore
+                } else {
+                    // Relative to root implicitly for now (or cwd if we had it)
+                    // Assuming path is just "foo" -> root/foo
+                    extern fs_node_t *fs_root;
+                    parent = fs_root;
+                    child_name = path;
+                }
+                
+                if (parent && child_name[0]) {
+                     mkdir_fs(parent, child_name, mode);
+                     ret = 0;
+                } else {
+                     ret = -1;
+                }
+            }
+            break;
+            
+
+            
+        case 10: // SYS_UNLINK (path)
+            {
+                char *path = (char*)regs->ebx;
+                // Basic split logic again (Duplicated for now, should be helper)
+                char *last_slash = NULL;
+                char *p = path;
+                while(*p) { if (*p == '/') last_slash = p; p++; }
+                
+                fs_node_t *parent = NULL;
+                char *child_name = NULL;
+                
+                if (last_slash) {
+                    *last_slash = 0; char *pp = path; if(!pp[0]) pp="/";
+                    child_name = last_slash + 1;
+                    parent = vfs_resolve_path(pp);
+                    *last_slash = '/';
+                } else {
+                    extern fs_node_t *fs_root;
+                    parent = fs_root;
+                    child_name = path;
+                }
+                
+                if (parent && child_name[0]) {
+                     unlink_fs(parent, child_name);
+                     ret = 0;
+                } else {
+                     ret = -1;
+                }
+            }
+            break;
+
+        case 38: // SYS_RENAME (old, new)
+            // Rename is complex as it might involve different parents.
+            // But vfs.c has vfs_rename helper?
+            // "vfs_rename" in vfs.c is (parent, old, new). It's simple rename in SAME dir.
+            // If we want "mv /a/b /c/d", that's a move.
+            // vfs.c has vfs_move? 
+            // In vfs.c I saw: vfs_delete, vfs_rename, vfs_copy, vfs_move exposed in vfs.h!
+            // Let's use vfs_move directly if possible!
+            // BUT wait, syscalls usually map to low level. Userspace `mv` uses `rename` syscall.
+            // I'll implement `SYS_RENAME` calling `vfs_move` or `vfs_rename`.
+            // Linux `rename` works across dirs if on same FS.
+            {
+                char *oldpath = (char*)regs->ebx;
+                char *newpath = (char*)regs->ecx;
+                
+                extern int vfs_move(const char *src, const char *dest);
+                // vfs_move matches the behavior we want (move or rename).
+                ret = vfs_move(oldpath, newpath);
+            }
+            break;
+
+
+
+        case 8: // SYS_CREAT (path, mode)
+            {
+                char *path = (char*)regs->ebx;
+                uint32_t mode = regs->ecx;
+                
+                // Same split logic
+                char *last_slash = NULL; char *p = path; while(*p) { if (*p == '/') last_slash = p; p++; }
+                fs_node_t *parent = NULL; char *child = NULL;
+                
+                if (last_slash) {
+                    *last_slash=0; char *pp=path; if(!pp[0]) pp="/";
+                    child = last_slash+1;
+                    parent = vfs_resolve_path(pp);
+                    *last_slash='/';
+                } else {
+                    extern fs_node_t *fs_root;
+                    parent = fs_root;
+                    child = path;
+                }
+                
+                if (parent && child[0]) {
+                     create_fs(parent, child, mode);
+                     // Now open it? SYS_CREAT returns fd.
+                     // But old creat usually returned fd.
+                     // My create_fs is void.
+                     // I should resolve it again and open it.
+                     // For now, return 0 (Success) and let user call open separately.
+                     // Linux creat returns fd.
+                     ret = 0; 
+                } else {
+                     ret = -1;
+                }
+            }
+            break;
+
         case 105: // SYS_DRAW_TEXT (msg, x, y, color)
             {
                  char *msg = (char*)regs->ebx;

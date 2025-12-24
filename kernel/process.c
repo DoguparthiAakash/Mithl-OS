@@ -85,11 +85,33 @@ process_t *process_create(const char *name, void (*entry_point)(void)) {
 }
 
 #include "elf.h"
-process_t *process_create_elf(const char *name, const char *filename) {
-    // ... ELF Loading Logic remains, but typically it would load into a separate address space ...
-    // For now, we reuse the basic thread creation for simplicity if ELF supported shared memory or we were using a flat model.
-    // In this "Simple Multithreading" generic step, we focus on in-kernel function threads (Command Handlers).
-    return NULL; 
+extern uint32_t elf_load_file(const char *filename);
+
+process_t *process_create_elf(const char *name, const char *filename, const char *args) {
+    // 1. Load ELF
+    uint32_t entry = elf_load_file(filename);
+    if (!entry) {
+        console_log("[PROCESS] Failed to load ELF: ");
+        console_log(filename);
+        console_log("\n");
+        return NULL;
+    }
+    
+    // 2. Create Process Wrapper
+    // Cast entry point to function pointer
+    process_t *proc = process_create(name, (void (*)(void))entry);
+    
+    // 3. Store Arguments
+    if (proc && args) {
+        int i=0;
+        while(args[i] && i<127) {
+            proc->cmdline[i] = args[i];
+             i++;
+        }
+        proc->cmdline[i] = 0;
+    }
+    
+    return proc;
 }
 
 void process_schedule(void) {
@@ -210,4 +232,18 @@ void process_init_main_thread(void) {
     
     process_list = proc;
     current_process = proc;
+}
+
+int process_get_list(process_info_t *buf, int max_count) {
+    int count = 0;
+    process_t *curr = process_list;
+    while(curr && count < max_count) {
+        buf[count].pid = curr->pid;
+        strcpy(buf[count].name, curr->name);
+        buf[count].state = curr->state;
+        
+        count++;
+        curr = curr->next;
+    }
+    return count;
 }

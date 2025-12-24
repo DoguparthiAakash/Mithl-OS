@@ -6,6 +6,7 @@
 #include "string.h"
 #include "graphics.h"
 #include "vfs.h"
+#include "process.h"
 
 #include <theme.h>
 
@@ -137,6 +138,14 @@ void terminal_print(terminal_t *term, const char *str) {
     }
 }
 
+void terminal_active_write(const char *buf, uint32_t len) {
+    if (active_term) {
+        for(uint32_t i=0; i<len; i++) {
+            terminal_put_char(active_term, buf[i]);
+        }
+    }
+}
+
 // Rust FFI
 extern size_t rust_handle_command(const char *input, size_t len, char *output, size_t max_out);
 
@@ -219,96 +228,127 @@ void terminal_run_command(terminal_t *term, const char *command) {
     }
     
     // Built-in Commands using VFS (legacy)
-    if (memcmp(command, "ls", 2) == 0) {
-        // List root or current directory
+    // 1. Built-in Commands
+    if (memcmp(command, "help", 4) == 0) {
+        terminal_print(term, "Mithl-OS Advanced Terminal\n");
+        terminal_print(term, "==========================\n");
+        terminal_print(term, "Built-in Commands:\n");
+        terminal_print(term, "  help      Show this help message.\n");
+        terminal_print(term, "  clear     Clear the terminal screen.\n");
+        terminal_print(term, "  cd <dir>  Change directory (e.g., cd /home).\n");
+        terminal_print(term, "  pwd       Print working directory.\n");
+        terminal_print(term, "  whoami    Show current user.\n");
+        terminal_print(term, "  date      Show system date/time.\n");
+        terminal_print(term, "  exit      Close the terminal.\n");
+        terminal_print(term, "\n");
+        terminal_print(term, "System Utilities (Userspace):\n");
+        terminal_print(term, "  ls        List directory contents.\n");
+        terminal_print(term, "  ps        List running processes.\n");
+        terminal_print(term, "  cat <f>   Display file contents.\n");
+        terminal_print(term, "\n");
+        terminal_print(term, "Applications:\n");
+        terminal_print(term, "  hello     Running 'Hello World' GUI App.\n");
+        terminal_print(term, "  calc      Launch Calculator.\n");
+    }
+    else if (memcmp(command, "ls", 2) == 0) {
+        // Try to execute /ls.elf
+        extern fs_node_t *finddir_fs(fs_node_t *node, char *name);
         extern fs_node_t *fs_root;
-        fs_node_t *node = fs_root; // Should be current_dir ideally
         
-        if (node) {
-             struct dirent *d;
-             int idx = 0;
-             while ((d = readdir_fs(node, idx)) != 0) {
-                 terminal_print(term, d->name);
-                 terminal_print(term, "  ");
-                 idx++;
-             }
-             terminal_print(term, "\n");
+        // Fast path: check if /ls.elf exists
+        if (finddir_fs(fs_root, "ls.elf")) {
+             process_create_elf("ls", "/ls.elf", "");
+             // Note: It runs async. Prompt appears immediately.
+             // Ideal: wait for process.
         } else {
-             terminal_print(term, "Filesystem error.\n");
+             terminal_print(term, "ls: Command not found or /ls.elf missing.\n");
         }
     }
     else if (memcmp(command, "cat ", 4) == 0) {
-        // Simple cat implementation
-        char filename[64];
+        // Extract arguments
         char *arg = (char*)command + 4;
         while(*arg == ' ') arg++;
-        strcpy(filename, arg);
         
+         if (finddir_fs(fs_root, "cat.elf")) {
+             process_create_elf("cat", "/cat.elf", arg);
+         } else {
+             terminal_print(term, "cat: /cat.elf not found.\n");
+         }
+    }
+    else if (memcmp(command, "ps", 2) == 0) {
+        extern fs_node_t *finddir_fs(fs_node_t *node, char *name);
         extern fs_node_t *fs_root;
-        fs_node_t *file = finddir_fs(fs_root, filename);
-        if (!file) {
-             fs_node_t *home = finddir_fs(fs_root, "home");
-             if (home) {
-                 fs_node_t *user = finddir_fs(home, "aakash");
-                 if (user) file = finddir_fs(user, filename);
-             }
-        }
-        
-        if (file) {
-             uint8_t buf[256];
-             uint32_t sz = read_fs(file, 0, 255, buf);
-             buf[sz] = 0;
-             terminal_print(term, (char*)buf);
-             terminal_print(term, "\n");
+        if (finddir_fs(fs_root, "ps.elf")) {
+             process_create_elf("ps", "/ps.elf", "");
         } else {
-             terminal_print(term, "File not found.\n");
+             terminal_print(term, "ps: Command not found or /ps.elf missing.\n");
         }
     }
-    else if (memcmp(command, "pwd", 3) == 0) {
-        terminal_print(term, "/home/aakash\n");
-    }
-    else if (memcmp(command, "whoami", 6) == 0) {
-        terminal_print(term, "aakash\n");
-    }
-    else if (memcmp(command, "date", 4) == 0) {
-        terminal_print(term, "Sun Dec 17 00:36:00 IST 2025\n");
-    }
-    else if (memcmp(command, "help", 4) == 0) {
-        terminal_print(term, "Available commands:\n");
-        terminal_print(term, "System: shutdown, restart, reboot, halt, poweroff\n");
-        terminal_print(term, "Info: uname, free, uptime, whoami, date, pwd\n");
-        terminal_print(term, "Files: ls, cat, mkdir, rm, touch, cp, mv\n");
-        terminal_print(term, "Utils: echo, clear, help\n");
-        terminal_print(term, "Apps: hello, snake, guess\n");
+    else if (memcmp(command, "calc", 4) == 0) {
+         process_create_elf("Calculator", "/calculator.elf", "");
     }
     else if (memcmp(command, "hello", 5) == 0) {
-        extern int hello_app(terminal_t *term);
-        hello_app(term);
+         process_create_elf("Hello", "/hello.elf", "");
     }
-    else if (memcmp(command, "snake", 5) == 0) {
-        extern int snake_app(terminal_t *term);
-        snake_app(term);
+    else if (memcmp(command, "mkdir ", 6) == 0) {
+         char *arg = (char*)command + 6;
+         while(*arg == ' ') arg++;
+         
+         if (finddir_fs(fs_root, "mkdir.elf")) {
+             process_create_elf("mkdir", "/mkdir.elf", arg);
+         } else {
+             terminal_print(term, "mkdir: /mkdir.elf not found.\n");
+         }
     }
-    else if (memcmp(command, "guess", 5) == 0) {
-        extern int guess_number_app(terminal_t *term);
-        guess_number_app(term);
+    else if (memcmp(command, "cp ", 3) == 0) {
+         char *arg = (char*)command + 3;
+         while(*arg == ' ') arg++;
+         
+         if (finddir_fs(fs_root, "cp.elf")) {
+             process_create_elf("cp", "/cp.elf", arg);
+         } else {
+             terminal_print(term, "cp: /cp.elf not found.\n");
+         }
+    }
+    else if (memcmp(command, "mv ", 3) == 0) {
+         char *arg = (char*)command + 3;
+         while(*arg == ' ') arg++;
+         
+         if (finddir_fs(fs_root, "mv.elf")) {
+             process_create_elf("mv", "/mv.elf", arg);
+         } else {
+             terminal_print(term, "mv: /mv.elf not found.\n");
+         }
+    }
+    else if (memcmp(command, "cc ", 3) == 0) {
+         char *arg = (char*)command + 3;
+         while(*arg == ' ') arg++;
+         
+         if (finddir_fs(fs_root, "cc.elf")) {
+             process_create_elf("cc", "/cc.elf", arg);
+         } else {
+             terminal_print(term, "cc: /cc.elf not found.\n");
+         }
+    }
+    else if (memcmp(command, "clear", 5) == 0) {
+        // Handled above usually, but fallback
+        memset(term->buffer, 0, sizeof(term->buffer));
+        term->cursor_x = 0; term->cursor_y = 0;
+    }
+    else if (memcmp(command, "pwd", 3) == 0) {
+        terminal_print(term, "/\n");
+    }
+    else if (memcmp(command, "date", 4) == 0) {
+        terminal_print(term, "Current Time: TBD (RTC not linked)\n");
+    }
+    // Generic ELF Launcher (e.g. ./program.elf)
+    else if (command[0] == '/' && strlen(command) > 4) {
+         process_create_elf("UserApp", command, "");
     }
     else {
-        // Rust Shell or Unknown
-        char output_buffer[256];
-        memset(output_buffer, 0, sizeof(output_buffer));
-        size_t len = strlen(command);
-        extern size_t rust_handle_command(const char *input, size_t len, char *output, size_t max_out);
-        size_t result_len = rust_handle_command(command, len, output_buffer, 255);
-        
-        if (result_len > 0) {
-            terminal_print(term, output_buffer);
-            terminal_print(term, "\n");
-        } else {
-             terminal_print(term, "Command not found: ");
-             terminal_print(term, command);
-             terminal_print(term, "\n");
-        }
+        terminal_print(term, "Unknown command: ");
+        terminal_print(term, command);
+        terminal_print(term, "\n");
     }
     
     terminal_print_prompt(term);

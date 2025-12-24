@@ -60,3 +60,64 @@ void draw_text(const char *msg, int x, int y, uint32_t color) {
     extern int syscall_5(int num, int arg1, int arg2, int arg3, int arg4, int arg5);
     syscall_5(SYS_DRAW_TEXT, (int)msg, x, y, color, 0);
 }
+
+// File System
+#define SYS_READ      3
+#define SYS_OPEN      5
+#define SYS_CLOSE     6
+#define SYS_READDIR   12
+
+int open(const char *path, int flags) {
+    return syscall_3(SYS_OPEN, (int)path, flags, 0);
+}
+
+int close(int fd) {
+    return syscall_1(SYS_CLOSE, fd);
+}
+
+int read(int fd, void *buf, int count) {
+    return syscall_3(SYS_READ, fd, (int)buf, count);
+}
+
+int write(int fd, const void *buf, int count) {
+    return syscall_3(SYS_WRITE, fd, (int)buf, count);
+}
+
+static dirent_t readdir_buf;
+dirent_t *readdir(int fd) {
+    int res = syscall_3(SYS_READDIR, fd, (int)&readdir_buf, 0);
+    if (res == 1) {
+        return &readdir_buf;
+    }
+    return 0; // NULL on EOF or Error
+}
+
+#define SYS_PROCESS_LIST 106
+int get_process_list(process_info_t *buf, int max_count) {
+    return syscall_3(SYS_PROCESS_LIST, (int)buf, max_count, 0);
+}
+
+#define SYS_GET_CMDLINE 107
+int get_cmdline(char *buf, int max_len) {
+    return syscall_3(SYS_GET_CMDLINE, (int)buf, max_len, 0);
+}
+
+#define SYS_MKDIR 108
+int mkdir(const char *path, uint32_t mode) {
+    return syscall_3(SYS_MKDIR, (int)path, mode, 0);
+}
+
+#define SYS_UNLINK 10
+int unlink(const char *pathname) {
+    return syscall_3(SYS_UNLINK, (int)pathname, 0, 0);
+}
+
+#define SYS_RENAME 38
+int rename(const char *oldpath, const char *newpath) {
+    return syscall_3(SYS_RENAME, (int)oldpath, (int)newpath, 0);
+}
+
+#define SYS_CREAT 8
+int creat(const char *pathname, uint32_t mode) {
+    return syscall_3(SYS_CREAT, (int)pathname, mode, 0);
+}
