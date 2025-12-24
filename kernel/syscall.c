@@ -77,7 +77,7 @@ void syscall_handler(registers_t *regs) {
                         // Map pages
                         for (uint32_t addr = start_alloc; addr < end_alloc; addr += 4096) {
                             void *phys = pmm_alloc_block();
-                            if (phys) vmm_map_page(phys, (void*)addr);
+                            if (phys) vmm_map_page(0, phys, (void*)addr);
                         }
                         
                         current_process->heap_end = new_brk;
@@ -543,6 +543,45 @@ void syscall_handler(registers_t *regs) {
                 }
             }
             break;
+            
+        case 14: // SYS_CHDIR (path)
+            {
+                char *path = (char*)regs->ebx;
+                fs_node_t *node = vfs_resolve_path(path);
+                if (node && (node->flags & 0x7) == FS_DIRECTORY) { // Check if directory
+                     // Update Process path
+                     // Need absolute path logic if relative?
+                     // vfs_resolve_path handles resolution, but what string do we store?
+                     // If path is relative "docs", we need current path + "/docs".
+                     // Ideally vfs path canonicalization helper exists.
+                     // For now, if absolute, set it. If relative, concat.
+                     
+                     if (path[0] == '/') {
+                         strcpy(current_process->cwd, path);
+                     } else {
+                         // Concat
+                         char temp[256];
+                         strcpy(temp, current_process->cwd);
+                         int tlen = strlen(temp);
+                         if (temp[tlen-1] != '/') strcat(temp, "/");
+                         strcat(temp, path);
+                         
+                         // Handle ".." ? Too complex for quick hack. 
+                         // Assume simple forward navigation or full path for now.
+                         // But users expect "cd .."
+                         // Let's rely on string ops later or assume resolving gives us Node, 
+                         // but we need to Store string for future relative lookups.
+                         
+                         // Hack: vfs_resolve_path resolves. We can't get canonical string from Node easily (no parent/name pointer back).
+                         // Best effort: store concated string.
+                         strcpy(current_process->cwd, temp);
+                     }
+                     ret = 0;
+                } else {
+                     ret = -1;
+                }
+            }
+            break;
 
         case 38: // SYS_RENAME (old, new)
             // Rename is complex as it might involve different parents.
@@ -567,7 +606,89 @@ void syscall_handler(registers_t *regs) {
 
 
 
-        case 8: // SYS_CREAT (path, mode)
+        case 42: // SYS_PIPE (int pipefd[2])
+            {
+                int *user_pipefd = (int*)regs->ebx;
+                fs_node_t *r_node = NULL;
+                fs_node_t *w_node = NULL;
+                
+                extern int make_pipe(fs_node_t **read_node, fs_node_t **write_node);
+                if (make_pipe(&r_node, &w_node) == 0) {
+                     // Alloc FDs
+                     int r_fd = -1, w_fd = -1;
+                     for(int i=3; i<256; i++) {
+                         if (!current_process->fd_table[i]) { r_fd = i; break; }
+                     }
+                     for(int i=3; i<256; i++) {
+                         if (!current_process->fd_table[i] && i != r_fd) { w_fd = i; break; }
+                     }
+                     
+                     if (r_fd != -1 && w_fd != -1) {
+                         // Setup Descriptors
+                         struct file_descriptor *rd = (struct file_descriptor *)memory_alloc(sizeof(struct file_descriptor));
+                         rd->node = r_node; rd->offset=0; rd->flags=0;
+                         current_process->fd_table[r_fd] = rd;
+                         
+                         struct file_descriptor *wd = (struct file_descriptor *)memory_alloc(sizeof(struct file_descriptor));
+                         wd->node = w_node; wd->offset=0; wd->flags=0;
+                         current_process->fd_table[w_fd] = wd;
+                         
+                         user_pipefd[0] = r_fd;
+                         user_pipefd[1] = w_fd;
+                         ret = 0;
+                     } else {
+                         // Cleanup (Free nodes?)
+                         ret = -1; 
+                     }
+                } else {
+                    ret = -1;
+                }
+            }
+            break;
+
+        case 63: // SYS_DUP2 (oldfd, newfd)
+            {
+                int oldfd = regs->ebx;
+                int newfd = regs->ecx;
+                
+                if (oldfd == newfd) { ret = newfd; break; }
+                
+                if (oldfd >= 0 && oldfd < 256 && current_process->fd_table[oldfd]) {
+                    if (newfd >= 0 && newfd < 256) {
+                        // Close newfd if open
+                        if (current_process->fd_table[newfd]) {
+                            // Close it
+                            struct file_descriptor *old = current_process->fd_table[newfd];
+                            close_fs(old->node);
+                            memory_free(old);
+                            current_process->fd_table[newfd] = NULL;
+                        }
+                        
+                        // Dup
+                        struct file_descriptor *src = current_process->fd_table[oldfd];
+                        struct file_descriptor *dst = (struct file_descriptor *)memory_alloc(sizeof(struct file_descriptor));
+                        
+                        // We need to support sharing the same underlying FS State?
+                        // If we just copy the node pointer, it works for some FS.
+                        // For pipes, node->ptr is shared context. VFS open/close counts refs?
+                        // My simple pipe just tracks reader/writer counts.
+                        // We should call 'open' on the node to incr ref count?
+                        dst->node = src->node;
+                        dst->offset = src->offset; // Share offset? Linux dup shares offset via 'open file description'
+                        dst->flags = src->flags;
+                        
+                        // Hook: Increment ref count if VFS supported it.
+                        // For pipe:
+                        if (src->node->open) src->node->open(src->node);
+                        
+                        current_process->fd_table[newfd] = dst;
+                        ret = newfd;
+                    } else { ret = -1; }
+                } else { ret = -1; }
+            }
+            break;
+
+        case 8: // SYS_CREAT
             {
                 char *path = (char*)regs->ebx;
                 uint32_t mode = regs->ecx;
@@ -679,6 +800,18 @@ void syscall_handler(registers_t *regs) {
                  } else {
                      ret = -1;
                  }
+            }
+            break;
+
+            
+        case 110: // SYS_AGENT_OP (op, arg1, arg2)
+            {
+                int op = regs->ebx;
+                void *a1 = (void*)regs->ecx;
+                void *a2 = (void*)regs->edx;
+                
+                extern int sys_agent_op(int op, void *arg1, void *arg2);
+                ret = sys_agent_op(op, a1, a2);
             }
             break;
 

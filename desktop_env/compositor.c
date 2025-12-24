@@ -103,19 +103,116 @@ void desktop_check_clock(void) {
     }
 }
 
-// Desktop Root Handler for Keyboard Navigation and Mouse Clicks
-void desktop_root_handler(gui_element_t *element, gui_event_t *event) {
-    // DEBUG: Log ALL events to see if handler is being called
-    if (event->type == GUI_EVENT_MOUSE_DOWN) {
-        console_write("[DESKTOP_HANDLER] Mouse down event received!\n");
+
+// Command Bar State
+static int cmdbar_visible = 0;
+static char cmdbar_buf[128];
+static int cmdbar_len = 0;
+
+void hide_command_bar() {
+    cmdbar_visible = 0;
+    cmdbar_len = 0;
+    cmdbar_buf[0] = 0;
+    gui_mgr.needs_redraw = 1;
+}
+
+void execute_command_bar() {
+    if (cmdbar_len == 0) return;
+    
+    console_write("[CMDBAR] Executing: ");
+    console_write(cmdbar_buf);
+    console_write("\n");
+    
+    // 1. Semantic Query
+    // We are in Kernel, so we call kernel functions directly
+    extern int agent_query(const char *query, char *buffer, int size);
+    extern void *process_create_elf(const char *name, const char *filename, const char *args);
+    
+    char binary[128];
+    if (agent_query(cmdbar_buf, binary, 128) == 0) {
+        // Found Agent
+        // Need to resolve path? agent path is usually absolute or relative
+        // process_create_elf expects full path or needs VFS lookup
+        // We do naive check
+        char path[128];
+        strcpy(path, binary);
+        
+        // If not absolute, prepend /bin/ ?
+        if (path[0] != '/') {
+            // Try /bin/
+            char temp[128];
+            strcpy(temp, "/bin/");
+            strcat(temp, path);
+            strcpy(path, temp);
+        }
+        
+        process_create_elf("Agent", path, "");
+    } else {
+        // No match, try running as direct command
+         char path[128];
+         strcpy(path, cmdbar_buf);
+         if (path[0] != '/') {
+            char temp[128];
+            strcpy(temp, "/bin/");
+            strcat(temp, path);
+            strcpy(path, temp);
+         }
+         // Append .elf if missing
+         int len = strlen(path);
+         if (len < 4 || strcmp(path+len-4, ".elf") != 0) {
+             strcat(path, ".elf");
+         }
+         
+         process_create_elf("Command", path, "");
     }
     
-    // Call default first (handles styling etc if any)
+    hide_command_bar();
+}
+
+// Desktop Root Handler for Keyboard Navigation and Mouse Clicks
+void desktop_root_handler(gui_element_t *element, gui_event_t *event) {
     gui_default_event_handler(element, event);
     
     if (event->type == GUI_EVENT_KEY_PRESS) {
         uint8_t key = (uint8_t)event->keyboard.key;
+        uint8_t mod = event->keyboard.modifiers;
+        char ascii = event->keyboard.raw_code; // Wait, raw_code or ascii? gui_event translation in gui.c puts ASCII in .key if typable?
+        // gui_event_t definition: union { char key; modifiers; raw_code; } keyboard
+        // Usually .key is ASCII char if printable.
         
+        // Command Bar Toggle
+        // Allow META (Win) OR ALT + SPACE
+        if (((mod & KEY_MOD_META) || (mod & KEY_MOD_ALT)) && key == ' ') {
+            cmdbar_visible = !cmdbar_visible;
+            if (cmdbar_visible) {
+                cmdbar_len = 0; 
+                cmdbar_buf[0] = 0;
+            }
+            gui_mgr.needs_redraw = 1;
+            return;
+        }
+        
+        // Command Bar Input
+        if (cmdbar_visible) {
+            if (key == '\n' || key == 0x1C) { // Enter
+                execute_command_bar();
+            } else if (key == 0x01 || key == 0x1B) { // ESC
+                hide_command_bar();
+            } else if (key == '\b') {
+                if (cmdbar_len > 0) {
+                    cmdbar_buf[--cmdbar_len] = 0;
+                    gui_mgr.needs_redraw = 1;
+                }
+            } else if (key >= 32 && key < 127) {
+                if (cmdbar_len < 64) {
+                    cmdbar_buf[cmdbar_len++] = key;
+                    cmdbar_buf[cmdbar_len] = 0;
+                    gui_mgr.needs_redraw = 1;
+                }
+            }
+            return; // Consume event if bar visible
+        }
+
         if (key == 0x50 || key == 0x4D) { // Down or Right -> Next
             selected_icon++;
             if (selected_icon > 4) selected_icon = 0;
@@ -805,10 +902,40 @@ void desktop_draw_rect(int x, int y, int w, int h) {
     draw_status_bubble();
 }
 
+// Command Bar Draw
+void draw_command_bar() {
+    if (!cmdbar_visible) return;
+    
+    int w = 500;
+    int h = 60;
+    int x = (gui_mgr.screen_width - w) / 2;
+    int y = gui_mgr.screen_height / 3; // Top-ish center
+    
+    // Glass Background
+    rect_t bar_rect = {x, y, w, h};
+    draw_rect_filled(bar_rect, 0xDD202020); // Dark translucent
+    
+    // Border
+    draw_rect(bar_rect, 0xFF404040);
+    
+    // Text
+    int text_x = x + 20;
+    int text_y = y + (h - 16) / 2;
+    
+    if (cmdbar_len == 0) {
+        draw_text_sf("Ask Mithl AI...", text_x, text_y, 0xFF808080);
+    } else {
+        draw_text_sf(cmdbar_buf, text_x, text_y, 0xFFFFFFFF);
+        // Cursor
+        draw_rect_filled((rect_t){text_x + get_text_width_sf(cmdbar_buf), text_y, 2, 16}, 0xFFFFFFFF);
+    }
+}
+
 // --- System Functions ---
 
 void desktop_draw(void) {
     desktop_draw_rect(0, 0, 1024, 768);
+    draw_command_bar();
 }
 
 // External assembly functions

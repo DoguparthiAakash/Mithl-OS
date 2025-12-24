@@ -56,6 +56,8 @@ C_SOURCES   = kernel/kernel.c \
               kernel/theme.c \
               kernel/apps/doom/i_mithl.c \
               kernel/apps/doom/libc_doom.c \
+              kernel/pipe.c \
+              kernel/semantic/semantic.c \
               games/DOOM-master/linuxdoom-1.10/am_map.c \
               games/DOOM-master/linuxdoom-1.10/d_items.c \
               games/DOOM-master/linuxdoom-1.10/d_main.c \
@@ -215,8 +217,11 @@ userspace/apps/ccl/ccl.elf: userspace/apps/ccl/ccl.c $(LIBC_OBJS)
 userspace/apps/filemgr/filemgr.elf: userspace/apps/filemgr/main.c $(LIBC_OBJS)
 	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -Iuserspace/apps/filemgr/icons -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
 
+userspace/apps/shell/shell.elf: userspace/apps/shell/shell.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
 # Create bootable ISO (BIOS only for now)
-iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.elf userspace/apps/ls/ls.elf userspace/apps/ps/ps.elf userspace/apps/cat/cat.elf userspace/apps/mkdir/mkdir.elf userspace/apps/cp/cp.elf userspace/apps/mv/mv.elf userspace/apps/cc/cc.elf userspace/apps/notepad/notepad.elf userspace/apps/fork_test/fork_test.elf userspace/apps/ccl/ccl.elf userspace/apps/filemgr/filemgr.elf
+iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.elf userspace/apps/ls/ls.elf userspace/apps/ps/ps.elf userspace/apps/cat/cat.elf userspace/apps/mkdir/mkdir.elf userspace/apps/cp/cp.elf userspace/apps/mv/mv.elf userspace/apps/cc/cc.elf userspace/apps/notepad/notepad.elf userspace/apps/fork_test/fork_test.elf userspace/apps/ccl/ccl.elf userspace/apps/filemgr/filemgr.elf userspace/apps/shell/shell.elf
 	rm -rf bootiso
 	mkdir -p bootiso/boot/grub
 	cp kernel.elf bootiso/boot/
@@ -313,6 +318,11 @@ iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.el
 	if [ -f userspace/apps/filemgr/filemgr.elf ]; then \
 	  cp userspace/apps/filemgr/filemgr.elf bootiso/boot/; \
 	  echo '  module2 /boot/filemgr.elf filemgr.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+
+	if [ -f userspace/apps/shell/shell.elf ]; then \
+	  cp userspace/apps/shell/shell.elf bootiso/boot/; \
+	  echo '  module2 /boot/shell.elf shell.elf' >> bootiso/boot/grub/grub.cfg; \
 	fi
 
 	if [ -f userspace/apps/linux_test/hello_linux ]; then \

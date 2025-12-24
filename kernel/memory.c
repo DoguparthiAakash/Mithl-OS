@@ -47,7 +47,7 @@ static int expand_heap(uint32_t n_pages) {
             return 0;
         }
         
-        vmm_map_page(phys, (void*)heap_current_end);
+        vmm_map_page(0, phys, (void*)heap_current_end);
         
         // Zero the page for safety
         memset((void*)heap_current_end, 0, PAGE_SIZE);

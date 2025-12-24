@@ -33,6 +33,8 @@ typedef struct process {
     int exit_code;
     uint32_t heap_end;          // Program Break (brk) for heap expansion
     
+    char cwd[256];              // Current Working Directory
+    
     // File Descriptor Table
     // We need a helper struct to track offset per FD
     struct file_descriptor {

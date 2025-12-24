@@ -61,12 +61,15 @@ start:
     ; MB1: EAX = 0x2BADB002, EBX = multiboot info ptr
     ; MB2: EAX = 0x36d76289, EBX = multiboot2 info ptr
     
-    ; set up a temporary stack
+    ; 1. Set up stack FIRST (ESP is undefined on entry!)
     mov     esp, stack_top
 
-    ; push arguments for kmain(uint32_t magic, uint32_t mbi)
-    push    ebx         ; mbi
-    push    eax         ; magic
+    ; 2. Push arguments for kmain(uint32_t magic, uint32_t mbi)
+    ; Note: C calling convention pushes right-to-left
+    push    ebx         ; mbi (pointer)
+    push    eax         ; magic (value)
+    
+    ; 3. Call Kernel
     call    kmain
 
 .hang:

@@ -1,14 +1,15 @@
 #include "stdlib.h"
 
+#include "stdlib.h"
+#include "syscall.h" // Include syscall numbers
+
 // Defined in syscall.asm
 extern int syscall_0(int num);
 extern int syscall_1(int num, int arg1);
+extern int syscall_2(int num, int arg1, int arg2);
 extern int syscall_3(int num, int arg1, int arg2, int arg3);
 
-#define SYS_EXIT      1
-#define SYS_WRITE     4
-#define SYS_MITHL_LOG 102
-#define SYS_MITHL_GUI_CREATE 100
+// Removed manual SYS defines (using syscall.h)
 
 void exit(int status) {
     syscall_1(SYS_EXIT, status);
@@ -64,6 +65,7 @@ void draw_image(const uint32_t *data, int x, int y, int w, int h) {
 // File System
 #define SYS_READ      3
 #define SYS_OPEN      5
+#define SYS_CHDIR 14
 #define SYS_CLOSE     6
 #define SYS_READDIR   12
 
@@ -75,12 +77,12 @@ int close(int fd) {
     return syscall_1(SYS_CLOSE, fd);
 }
 
-int write(int fd, const void *buf, int count) {
+int write(int fd, const void *buf, uint32_t count) {
     return syscall_3(SYS_WRITE, fd, (int)buf, count);
 }
 
 // Stdin Support
-int read(int fd, void *buf, int count) {
+int read(int fd, void *buf, uint32_t count) {
     return syscall_3(SYS_READ, fd, (int)buf, count);
 }
 
@@ -152,7 +154,12 @@ int unlink(const char *pathname) {
 
 #define SYS_RENAME 38
 int rename(const char *oldpath, const char *newpath) {
-    return syscall_3(SYS_RENAME, (int)oldpath, (int)newpath, 0);
+    return syscall_2(38, (uint32_t)oldpath, (uint32_t)newpath);
+}
+
+
+int chdir(const char *path) {
+    return syscall_1(SYS_CHDIR, (uint32_t)path);
 }
 
 #define SYS_CREAT 8
@@ -165,12 +172,22 @@ int fork() {
     return syscall_0(SYS_FORK);
 }
 
-#define SYS_WAITPID 7
 int waitpid(int pid, int *status, int options) {
     return syscall_3(SYS_WAITPID, pid, (int)status, options);
 }
 
-#define SYS_EXECVE 11
 int execve(const char *filename, char *const argv[], char *const envp[]) {
-    return syscall_3(SYS_EXECVE, (int)filename, (int)argv, (int)envp);
+    return syscall_3(SYS_EXECVE, (uint32_t)filename, (uint32_t)argv, (uint32_t)envp);
+}
+
+int pipe(int pipefd[2]) {
+    return syscall_1(SYS_PIPE, (uint32_t)pipefd);
+}
+
+int dup2(int oldfd, int newfd) {
+    return syscall_2(SYS_DUP2, (uint32_t)oldfd, (uint32_t)newfd);
+}
+
+int agent_op(int op, void *arg1, void *arg2) {
+    return syscall_3(SYS_AGENT_OP, op, (uint32_t)arg1, (uint32_t)arg2);
 }

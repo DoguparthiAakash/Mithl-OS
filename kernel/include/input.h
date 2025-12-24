@@ -20,6 +20,7 @@ typedef enum
 #define KEY_MOD_CTRL  (1 << 1)
 #define KEY_MOD_ALT   (1 << 2)
 #define KEY_MOD_CAPS  (1 << 3)
+#define KEY_MOD_META  (1 << 4) // Windows/Super Key
 
 typedef struct
 {

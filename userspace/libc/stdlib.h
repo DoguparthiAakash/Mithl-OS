@@ -50,16 +50,19 @@ int waitpid(int pid, int *status, int options);
 char getchar();
 
 // File Operations
-int open(const char *pathname, int flags);
+int open(const char *path, int flags);
 int close(int fd);
-int read(int fd, void *buf, int count);
-int write(int fd, const void *buf, int count);
+int read(int fd, void *buf, uint32_t count);
+int write(int fd, const void *buf, uint32_t count);
+int pipe(int pipefd[2]);
+int dup2(int oldfd, int newfd);
 dirent_t *readdir(int fd);
 int mkdir(const char *path, uint32_t mode);
 int unlink(const char *pathname);
 int rename(const char *oldpath, const char *newpath);
 int unlink(const char *pathname);
 int rename(const char *oldpath, const char *newpath);
+int chdir(const char *path);
 int creat(const char *pathname, uint32_t mode);
 
 // Exec
@@ -73,5 +76,19 @@ typedef struct {
 } process_info_t;
 
 int get_process_list(process_info_t *buf, int max_count);
+
+// Semantic Types
+#define AGENT_OP_REGISTER 1
+#define AGENT_OP_QUERY    2
+
+typedef struct {
+    char name[64];
+    char intents[128];
+    char binary[128];
+    int  trust_level;
+    int  active;
+} agent_node_t;
+
+int agent_op(int op, void *arg1, void *arg2);
 
 #endif

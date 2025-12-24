@@ -3,6 +3,7 @@
 #include "boot_info.h"
 #include "string.h"
 #include "console.h"
+#include "ports.h"
 
 // The Kernel's Page Directory
 pd_entry_t* kernel_page_directory = 0;
@@ -35,14 +36,13 @@ static inline uint32_t vmm_get_cr3() {
 }
 
 // Map a single page
-int vmm_map_page(void* phys, void* virt) {
-    // USE CURRENT PD (CR3) instead of global kernel_page_directory
-    // This supports multi-process isolation.
-    // If paging not enabled yet, use kernel_page_directory?
-    // CR3 might be 0 initially?
-    
-    pd_entry_t* page_directory = (pd_entry_t*)vmm_get_cr3();
-    if (!page_directory) page_directory = kernel_page_directory;
+int vmm_map_page(pd_entry_t* pd, void* phys, void* virt) {
+    // If PD is provided, use it. Otherwise use current CR3.
+    pd_entry_t* page_directory = pd;
+    if (!page_directory) {
+        page_directory = (pd_entry_t*)vmm_get_cr3();
+        if (!page_directory) page_directory = kernel_page_directory;
+    }
     if (!page_directory) return 0; // Too early
     
     uint32_t pd_index = (uint32_t)virt >> 22;
@@ -83,19 +83,33 @@ int vmm_map_page(void* phys, void* virt) {
 
 
 void vmm_map_framebuffer(boot_info_t* boot_info) {
-   if (boot_info->framebuffer.addr != 0) {
+    if (boot_info->framebuffer.addr != 0) {
+       // Check for 64-bit address overflow
+       if (boot_info->framebuffer.addr > 0xFFFFFFFF) {
+           serial_write("[VMM] CRITICAL: Framebuffer is > 4GB! (");
+           // print top 32 bits?
+           serial_write(") Truncating/Failing.\n");
+       }
+       
        uint32_t fb_addr = (uint32_t)boot_info->framebuffer.addr;
        uint32_t fb_size = boot_info->framebuffer.pitch * boot_info->framebuffer.height;
        
+       serial_write("[VMM] Mapping Framebuffer at: 0x");
+       // Simple Hex print
+        char h[] = "0123456789ABCDEF";
+        for(int i=28; i>=0; i-=4) {
+            char c = h[(fb_addr >> i) & 0xF];
+            // serial_putc
+            while ((inb(0x3F8 + 5) & 0x20) == 0);
+            outb(0x3F8, c);
+        }
+       serial_write("\n");
+
        // Align size to page boundary
        if (fb_size % PAGE_SIZE) fb_size += PAGE_SIZE; // Rough roundup
        
-       serial_write("[VMM] Mapping Framebuffer at: ");
-       // print hex fb_addr (TODO)
-       serial_write("\n");
-
        for (uint32_t offset = 0; offset < fb_size; offset += PAGE_SIZE) {
-           vmm_map_page((void*)(fb_addr + offset), (void*)(fb_addr + offset));
+           vmm_map_page(kernel_page_directory, (void*)(fb_addr + offset), (void*)(fb_addr + offset));
        }
    }
 }
@@ -118,7 +132,7 @@ void vmm_init(boot_info_t* boot_info) {
     // 128MB = 32 * 1024 pages
     uint32_t i = 0;
     while (i < (128 * 1024 * 1024)) { // 128 MB
-        vmm_map_page((void*)i, (void*)i);
+        vmm_map_page(kernel_page_directory, (void*)i, (void*)i);
         i += PAGE_SIZE;
     }
     

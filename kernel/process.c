@@ -3,6 +3,7 @@
 #include "string.h"
 #include "console.h"
 #include "mm/vmm.h"
+#include "mm/pmm.h"
 #include "idt.h" // registers_t
 
 static process_t *process_list = NULL;
@@ -69,6 +70,7 @@ process_t *process_create(const char *name, void (*entry_point)(void)) {
     proc->parent_pid = -1;
     proc->exit_code = 0;
     proc->heap_end = 0x10000000; // Start Heap at 256MB mark (Temporary safe zone)
+    strcpy(proc->cwd, "/");      // Default to Root
     for(int i=0; i<256; i++) proc->fd_table[i] = NULL;
     
     // VMM: Clone Kernel Directory
@@ -161,47 +163,125 @@ void process_yield(void) {
 
 // Exec: Replace current process image
 int process_exec(const char *filename, char *const argv[], char *const envp[]) {
-    // 1. Find file
-    // For now, assume elf_load_file handles finding it via VFS
-    // But elf_load_file returns 'entry point'. It loads into current address space?
-    // Our elf_loader just maps pages.
-    // If we are replacing, we should unmap old pages?
-    // For Mithl-OS "Thread Wrapper" style, we can't easily replace.
-    // BUT we must try.
+    // 1. Load ELF (This maps segments into CURRENT address space)
+    // In a real OS, we should clear the old address space first.
+    // Here we assume "additive" loading or fresh fork.
     
-    // Simplification: We spawn a NEW thread and kill the old one?
-    // That's fork+exec. 
-    // real exec replaces.
-    
-    // Let's implement 'spawn' semantics for now but call it exec.
-    // Or clear current address space.
-    
-    // TODO: Clear address space.
-    
+    // We assume elf_load_file handles PT_INTERP recursion now.
     uint32_t entry = elf_load_file(filename);
     if (!entry) return -1;
     
-    // Setup Stack with Argv
-    // Argument passing in Linux:
-    // Stack Top: argc
-    //            argv pointers...
-    //            0
-    //            envp pointers...
-    //            0
-    //            Data (actual strings)
+    // 2. Allocate User Stack
+    // Standard Linux stack is high memory. Let's pick 0xB0000000.
+    // Allocate 16KB for stack + args
+    uint32_t stack_top = 0xB0000000;
+    uint32_t stack_size = 4 * 4096;
+    uint32_t stack_base = stack_top - stack_size;
     
-    // This is complex. For now, ignore args.
+    extern pd_entry_t* kernel_page_directory;
     
-    // Jump to entry
-    // We need to reset the stack and jump.
-    // But we are in kernel mode C.
-    // We can manually reset current_process->esp?
+    for(uint32_t addr = stack_base; addr < stack_top; addr += 4096) {
+        void *phys = pmm_alloc_block();
+        if (!phys) {
+             console_log("OOM Exec Stack\n");
+             return -1;
+        }
+        // Map it. Note: 0 as PD means "Current PD"
+        vmm_map_page(0, phys, (void*)addr);
+    }
     
-    // Hack: Just call it as function for now.
-    ((void (*)(void))entry)();
+    // 3. Setup Stack (System V ABI)
+    // We construct it directly in the mapped memory.
+    // Pointers are virtual (0xB0......).
     
-    // If it returns, exit process
-    process_exit();
+    // We act as if we are writing to stack_top and moving down.
+    uint32_t *sp = (uint32_t*)stack_top;
+    // Usually strings are at the very top.
+    
+    // Let's count args/env
+    int argc = 0;
+    while(argv[argc]) argc++;
+    
+    int envc = 0;
+    if (envp) while(envp[envc]) envc++;
+    
+    // Check Auxv
+    Elf32_auxv_t auxv[32];
+    int auxc = elf_get_auxv(auxv, 32);
+    
+    // Copy Strings to Stack.
+    // Strategy: Push strings first (high addr), remember their addrs.
+    // Then align SP, then push pointers.
+    
+    // We need current sp as byte pointer
+    uintptr_t current_sp = (uintptr_t)sp;
+    
+    char *argv_ptrs[64]; // Max args constraint for simplicity
+    char *envp_ptrs[64];
+    
+    // Push Envp Strings
+    for (int i = envc - 1; i >= 0; i--) {
+        int len = strlen(envp[i]) + 1;
+        current_sp -= len;
+        strcpy((char*)current_sp, envp[i]);
+        envp_ptrs[i] = (char*)current_sp;
+    }
+    
+    // Push Argv Strings
+    for (int i = argc - 1; i >= 0; i--) {
+        int len = strlen(argv[i]) + 1;
+        current_sp -= len;
+        strcpy((char*)current_sp, argv[i]);
+        argv_ptrs[i] = (char*)current_sp;
+    }
+    
+    // Align SP to 4 bytes
+    current_sp &= ~3;
+    sp = (uint32_t*)current_sp;
+    
+    // Push Aux Vector
+    // Terminator first
+    *--sp = 0; *--sp = 0; // AT_NULL
+    // Push in reverse
+    for (int i = auxc - 1; i >= 0; i--) {
+        *--sp = auxv[i].a_un.a_val;
+        *--sp = auxv[i].a_type;
+    }
+    
+    // Push Empty Envp (NULL)
+    *--sp = 0;
+    // Push Envp Pointers
+    for (int i = envc - 1; i >= 0; i--) {
+        *--sp = (uint32_t)envp_ptrs[i];
+    }
+    
+    // Push Empty Argv (NULL)
+    *--sp = 0;
+    // Push Argv Pointers
+    for (int i = argc - 1; i >= 0; i--) {
+        *--sp = (uint32_t)argv_ptrs[i];
+    }
+    
+    // Push Argc
+    *--sp = argc;
+    
+    // Final SP
+    current_process->esp = (uint32_t)sp;
+    
+    // Update Heap End to start after stack or code?
+    // Usually heap is after BSS. elf_load_file handles BSS.
+    // We assume heap starts after program break.
+    
+    // Jump to entry!
+    // We are in kernel mode, so valid to just set ESP and Jump.
+    asm volatile(
+        "mov %0, %%esp \n\t"
+        "jmp *%1" 
+        : : "r"(current_process->esp), "r"(entry) : "memory"
+    );
+    
+    // Should not return
+    while(1);
     return 0;
 }
 
@@ -268,6 +348,9 @@ int process_fork(registers_t *regs) {
     // Name
     int len=0; while(current_process->name[len]) len++;
     for(int i=0; i<32; i++) child->name[i] = current_process->name[i];
+    
+    // Copy CWD
+    strcpy(child->cwd, current_process->cwd);
     
     // 3. Clone VMM
     // Note: This relies on vmm_clone_directory linking/copying correctly.

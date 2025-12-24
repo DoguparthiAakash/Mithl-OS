@@ -40,7 +40,7 @@ typedef uint32_t pd_entry_t;
 // Functions
 // Functions
 void vmm_init(boot_info_t* boot_info);
-int vmm_map_page(void* phys, void* virt);
+int vmm_map_page(pd_entry_t* pd, void* phys, void* virt);
 void vmm_enable_paging();
 
 pd_entry_t* vmm_clone_directory(pd_entry_t* src);

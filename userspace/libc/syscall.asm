@@ -1,6 +1,7 @@
 global syscall_3
 global syscall_0
 global syscall_1
+global syscall_2
 global syscall_5
 
 section .text
@@ -26,6 +27,22 @@ syscall_1:
     
     mov eax, [ebp+8] ; num
     mov ebx, [ebp+12] ; arg1
+    int 0x80
+    
+    pop ebx
+    leave
+    leave
+    ret
+
+; int syscall_2(int num, int arg1, int arg2);
+syscall_2:
+    push ebp
+    mov ebp, esp
+    push ebx
+    
+    mov eax, [ebp+8] ; num
+    mov ebx, [ebp+12] ; arg1
+    mov ecx, [ebp+16] ; arg2
     int 0x80
     
     pop ebx

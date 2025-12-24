@@ -14,7 +14,10 @@
 #include "vga.h"
 #include "gdt.h"
 #include "gui.h"
-#include "input.h"
+#include <input.h>
+#include <bootlogo.h>
+#include <theme.h>
+#include <semantic.h>
 #include "idt.h"
 #include "multiboot.h"
 #include "boot_adapter.h"
@@ -113,25 +116,28 @@ void kmain(uint32_t magic, void* addr)
 
     // Initialize GDT first (essential for stable segments)
     gdt_init();
-    console_log("[INFO] GDT Initialized.\n");
+    serial_write("[INFO] GDT Initialized.\n");
     
     // Enable SSE immediately (before any Rust/Float code runs)
     enable_sse();
+    serial_write("[INFO] SSE Initialized.\n");
 
     // Disable PIC interrupts immediately to run in polling mode
     i8259_disable();
-    console_log("[INFO] PIC Disabled.\n");
+    serial_write("[INFO] PIC Disabled.\n");
+
     // === Initialize systems ===
     call_constructors();
-    console_log("[INFO] Constructors Called.\n");
+    serial_write("[INFO] Constructors Called.\n");
+    
     idt_init(); // Initialize IDT to catch exceptions
-    console_log("[INFO] IDT Initialized.\n");
+    serial_write("[INFO] IDT Initialized.\n");
 
     // Parse Multiboot Info
     static boot_info_t boot_info;
     if (parse_multiboot(magic, addr, &boot_info) != 0) {
         serial_write("[CRITICAL] Invalid Multiboot Magic!\n");
-        console_write("PANIC: Invalid Multiboot Magic!\n");
+        // console_write("PANIC: Invalid Multiboot Magic!\n");
         for(;;) __asm__ volatile("hlt");
     }
 
@@ -226,6 +232,9 @@ void kmain(uint32_t magic, void* addr)
     for (volatile int i = 0; i < 300000000; i++); // Moderate delay ~2-4s on QEMU
     // console_write("[INFO] Boot Logo Skipped (Debug Mode).\n");
 
+    // Initialize Semantic System
+    agent_init();
+
     // Initialize GUI System
     console_write("[INFO] Init GUI...\n");
     gui_renderer_t renderer;
@@ -261,6 +270,7 @@ void kmain(uint32_t magic, void* addr)
     // process_create_elf("Calculator", "/calculator.elf");
     // process_create_elf("ls", "/ls.elf");
     process_create_elf("ps", "/ps.elf", "");
+    // process_create_elf("Shell", "/shell.elf", "");
     
     // Enable Interrupts (PIT will drive preemption)
     asm volatile("sti");

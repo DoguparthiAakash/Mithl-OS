@@ -37,6 +37,23 @@ void keyboard_init(void)
     mod_state = 0;
 }
 
+// Extended flag
+static int extended = 0;
+
+// Serial Debug Helper
+static void serial_log_byte(uint8_t b) {
+    while ((inb(0x3F8 + 5) & 0x20) == 0);
+    outb(0x3F8, b);
+}
+static void serial_log_str(const char* s) {
+    while(*s) serial_log_byte(*s++);
+}
+static void serial_log_hex(uint8_t n) {
+    char h[] = "0123456789ABCDEF";
+    serial_log_byte(h[n >> 4]);
+    serial_log_byte(h[n & 0xF]);
+}
+
 int keyboard_poll(void)
 {
     uint8_t status = inb(KEYBOARD_STATUS_PORT);
@@ -45,29 +62,48 @@ int keyboard_poll(void)
     if ((status & 0x21) == 0x01)
     {
         uint8_t scancode = inb(KEYBOARD_DATA_PORT);
+        
+        // DEBUG: Log every scancode
+        serial_log_str("[KBD] Scancode: ");
+        serial_log_hex(scancode);
+        serial_log_str(extended ? " (EXT)\n" : "\n");
+        
+        if (scancode == 0xE0) {
+            extended = 1;
+            return 1;
+        }
+        
         int release = (scancode & 0x80) ? 1 : 0;
         uint8_t code = scancode & 0x7F;
 
         // Modifier Keycodes (Set 1)
-        // LShift: 0x2A, RShift: 0x36
-        // LCtrl: 0x1D
-        // LAlt: 0x38
-        // CapsLock: 0x3A
-
-        if (code == 0x2A || code == 0x36) { // Shift
-            if (release) mod_state &= ~KEY_MOD_SHIFT;
-            else mod_state |= KEY_MOD_SHIFT;
-        } else if (code == 0x1D) { // Ctrl
-            if (release) mod_state &= ~KEY_MOD_CTRL;
-            else mod_state |= KEY_MOD_CTRL;
-        } else if (code == 0x38) { // Alt
-            if (release) mod_state &= ~KEY_MOD_ALT;
-            else mod_state |= KEY_MOD_ALT;
-        } else if (code == 0x3A) { // CapsLock
-            if (!release) { // Toggle on press
-                 if (mod_state & KEY_MOD_CAPS) mod_state &= ~KEY_MOD_CAPS;
-                 else mod_state |= KEY_MOD_CAPS;
+        
+        if (!extended) {
+            if (code == 0x2A || code == 0x36) { // Shift
+                if (release) mod_state &= ~KEY_MOD_SHIFT;
+                else mod_state |= KEY_MOD_SHIFT;
+            } else if (code == 0x1D) { // Ctrl
+                if (release) mod_state &= ~KEY_MOD_CTRL;
+                else mod_state |= KEY_MOD_CTRL;
+            } else if (code == 0x38) { // Alt
+                if (release) mod_state &= ~KEY_MOD_ALT;
+                else mod_state |= KEY_MOD_ALT;
+            } else if (code == 0x3A) { // CapsLock
+                if (!release) { // Toggle on press
+                     if (mod_state & KEY_MOD_CAPS) mod_state &= ~KEY_MOD_CAPS;
+                     else mod_state |= KEY_MOD_CAPS;
+                }
             }
+        } else {
+             // Extended Keys
+             // Windows Key (LWin = 0x5B, RWin = 0x5C)
+             // DEBUG: Log Win Key Detection
+             if (code == 0x5B || code == 0x5C) {
+                 serial_log_str("[KBD] Win Key Detected!\n");
+                 if (release) mod_state &= ~KEY_MOD_META;
+                 else mod_state |= KEY_MOD_META;
+             }
+             // Add other extended keys if needed
         }
 
         if (release)
@@ -75,7 +111,6 @@ int keyboard_poll(void)
             ks.key_pressed = 0;
             ks.key_code = code;
             ks.ascii = 0;
-            // Also report releases? Currently input system mainly uses presses for typing
         }
         else
         {
@@ -85,7 +120,7 @@ int keyboard_poll(void)
 
             // Resolve ASCII
             uint8_t ascii = 0;
-            if (code < 128) {
+            if (!extended && code < 128) { // Normal map
                 // Determine if we should use shifted map
                 // Shift works on everything in shifted map
                 // CapsLock only affects letters (approx. 0x10-0x19, 0x1E-0x26, 0x2C-0x32)
@@ -111,7 +146,10 @@ int keyboard_poll(void)
             // Post event to queue with modifiers
             input_add_key_event(code, ascii, mod_state, 0); // 0 = Press
         }
-
+        
+        // Reset extended unless it was E0 (handled above)
+        if (scancode != 0xE0) extended = 0; 
+        
         return 1;
     }
 

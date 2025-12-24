@@ -28,6 +28,10 @@ extern int syscall_5(int num, int arg1, int arg2, int arg3, int arg4, int arg5);
 #define SYS_GET_CMDLINE      107
 #define SYS_MKDIR            108
 #define SYS_DRAW_IMAGE       109
+#define SYS_CHDIR            14
+#define SYS_PIPE 42
+#define SYS_DUP2 63
+#define SYS_AGENT_OP 110
 
 // Helpers
 static inline void sys_exit(int code) {
