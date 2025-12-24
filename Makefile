@@ -307,6 +307,67 @@ iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.el
 	  echo '  module2 /boot/ccl.elf ccl.elf' >> bootiso/boot/grub/grub.cfg; \
 	fi
 
+	if [ -f userspace/apps/linux_test/hello_linux ]; then \
+	  cp userspace/apps/linux_test/hello_linux bootiso/boot/; \
+	  echo '  module2 /boot/hello_linux hello_linux' >> bootiso/boot/grub/grub.cfg; \
+	fi
+
+	echo '  boot' >> bootiso/boot/grub/grub.cfg
+	echo '}' >> bootiso/boot/grub/grub.cfg
+	
+	# --- TCC Deployment ---
+	# We append a separate menu entry or just add to the main one? 
+	# Adding to main one is easiest but might hit module limits of GRUB legacy (though Multiboot2 is better).
+	# Let's add to the SAME entry by using a temp file handling logic or just SED inserted before 'boot'.
+	
+	# Complex Logic: We need to insert BEFORE the 'boot' line we just added.
+	# Actually, let's rewrite the "Create ISO" block to be cleaner or just use a helper script.
+	# For now, I will modify the above block in-place (this ReplaceFileContent replaces the end of the block).
+	
+	# Remove the 'boot' and '}' I just added in previous logic (if I replace the block that adds them).
+	# The previous block ended with:
+	#   echo '  module2 /boot/hello_linux hello_linux' >> bootiso/boot/grub/grub.cfg; \
+	# fi
+	# echo '  boot' ...
+	
+	# I will replace from the hello_linux block to the end.
+
+	if [ -f userspace/apps/linux_test/hello_linux ]; then \
+	  cp userspace/apps/linux_test/hello_linux bootiso/boot/; \
+	  echo '  module2 /boot/hello_linux /bin/hello_linux' >> bootiso/boot/grub/grub.cfg; \
+	fi
+
+	# TCC
+	if [ -f tcc_build/tcc ]; then \
+	  cp tcc_build/tcc bootiso/boot/; \
+	  echo '  module2 /boot/tcc /bin/tcc' >> bootiso/boot/grub/grub.cfg; \
+	fi
+	
+	# LibTCC1
+	if [ -f tcc_build/lib/libtcc1.a ]; then \
+	  cp tcc_build/lib/libtcc1.a bootiso/boot/; \
+	  echo '  module2 /boot/libtcc1.a /usr/lib/libtcc1.a' >> bootiso/boot/grub/grub.cfg; \
+	fi
+	
+	# TCC Includes
+	# Copy all .h from tcc_build/include
+	for f in tcc_build/include/*.h; do \
+		if [ -f "$$f" ]; then \
+			cp "$$f" bootiso/boot/; \
+			BASE=$$(basename $$f); \
+			echo "  module2 /boot/$$BASE /usr/lib/tcc/include/$$BASE" >> bootiso/boot/grub/grub.cfg; \
+		fi; \
+	done
+	
+	# Libc Includes
+	for f in userspace/libc/*.h; do \
+		if [ -f "$$f" ]; then \
+			cp "$$f" bootiso/boot/; \
+			BASE=$$(basename $$f); \
+			echo "  module2 /boot/$$BASE /usr/include/$$BASE" >> bootiso/boot/grub/grub.cfg; \
+		fi; \
+	done
+
 	echo '  boot' >> bootiso/boot/grub/grub.cfg
 	echo '}' >> bootiso/boot/grub/grub.cfg
 	

@@ -268,7 +268,63 @@ void ramfs_init_clean(void) {
 }
 #include "boot_info.h"
 
-// Load Multiboot Modules into / (root)
+// Helper to ensure parent directories exist
+fs_node_t *ramfs_ensure_dir(const char *path) {
+    if (path[0] == 0) return fs_root; // Root
+    
+    // We need to resolve path. Since we are booting, we can assume fs_root is mounted.
+    // But vfs_resolve_path might fail if dir doesn't exist.
+    // So we iterate and create.
+    
+    fs_node_t *curr = fs_root;
+    char segment[64];
+    int i = 0;
+    const char *p = path;
+    if (*p == '/') p++; // Skip leading slash
+    
+    while(*p) {
+        int s = 0;
+        while(*p && *p != '/') {
+            segment[s++] = *p++;
+        }
+        segment[s] = 0;
+        if (*p == '/') p++;
+        
+        // Check if segment exists in curr
+        fs_node_t *next = 0; // ramfs_finddir(curr, segment); // finddir not exposed?
+        // Use vfs finddir logic manually or expose ramfs_finddir
+        // ramfs uses a list.
+        list_t *children = (list_t*)curr->ptr;
+        if (children) {
+            list_node_t *item = children->head;
+            while(item) {
+                fs_node_t *child = (fs_node_t*)item->data;
+                if (strcmp(child->name, segment) == 0) {
+                    next = child;
+                    break;
+                }
+                item = item->next;
+            }
+        }
+        
+        if (!next) {
+            // Create directory
+            if (segment[0]) {
+                next = ramfs_create_dir(segment);
+                ramfs_add_child(curr, next);
+                console_write("[RAMFS] Created Dir: ");
+                console_write(segment);
+                console_write("\n");
+            } else {
+                next = curr; // Double slash?
+            }
+        }
+        curr = next;
+    }
+    return curr;
+}
+
+// Load Multiboot Modules
 void ramfs_load_modules(boot_info_t *info) {
     if (!info) return;
     
@@ -277,31 +333,46 @@ void ramfs_load_modules(boot_info_t *info) {
     for (uint32_t i = 0; i < info->mod_count; i++) {
         boot_module_t *mod = &info->modules[i];
         
-        char *name = mod->string;
-        if (!name || !*name) name = "module.bin";
+        char *path = mod->string;
+        if (!path || !*path) path = "module.bin";
         
-        // Extract filename from path if needed (e.g. /modules/doom.wad -> doom.wad)
-        char *basename = name;
-        for (char *c = name; *c; c++) {
-            if (*c == '/') basename = c + 1;
+        // Skip "/boot/" prefix if present to make generic paths easier?
+        // GRUB often passes paths like "/boot/hello.elf".
+        // Userspace expects `/bin/hello`.
+        // Let's implement a mapping strategy:
+        // if path starts with "/boot/", we keep it? Or strip it?
+        // Let's keeping full structure but strip leading slash for recursive creation.
+        
+        // Split Path into Dir and Filename
+        char parent_path[128];
+        char filename[64];
+        
+        // Find last slash
+        char *last_slash = 0;
+        char *ptr = path;
+        while(*ptr) { if(*ptr == '/') last_slash = ptr; ptr++; }
+        
+        if (last_slash) {
+            // Copy dir path
+            int len = last_slash - path;
+            memcpy(parent_path, path, len);
+            parent_path[len] = 0;
+            strcpy(filename, last_slash + 1);
+        } else {
+            parent_path[0] = 0; // Root
+            strcpy(filename, path);
         }
+        
+        fs_node_t *parent_node = ramfs_ensure_dir(parent_path);
         
         // Create file
         uint32_t size = mod->mod_end - mod->mod_start;
+        fs_node_t *node = ramfs_create_file_ex(filename, (const char*)mod->mod_start, size);
         
-        // Use binary safe creation
-        fs_node_t *node = ramfs_create_file_ex(basename, (const char*)mod->mod_start, size);
-        
-        ramfs_add_child(fs_root, node);
-        
-        // Also log to Serial because Console might be hidden
-        extern void serial_write(const char *s); // Forward decl
-        serial_write("[RAMFS] Loaded Module: ");
-        serial_write(basename);
-        serial_write("\n");
+        ramfs_add_child(parent_node, node);
         
         console_write("  Loaded: ");
-        console_write(basename);
+        console_write(path);
         console_write("\n");
     }
 }
