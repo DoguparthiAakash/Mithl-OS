@@ -1,0 +1,1 @@
+/home/aakash/Downloads/Mithl-OS/kernel/rust/target/i686-unknown-linux-gnu/release/libmithl_rust.a: /home/aakash/Downloads/Mithl-OS/kernel/rust/src/lib.rs /home/aakash/Downloads/Mithl-OS/kernel/rust/src/shell.rs

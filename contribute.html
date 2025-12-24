@@ -28,8 +28,8 @@
 
             <div class="card" style="margin-bottom: 2rem;">
                 <h3>🛠 Kernel Development</h3>
-                <p>Help us expand the <code>mithl_core</code> Linux Kernel Module. We need optimization of the Intent
-                    Registry and integration with `procfs` for deeper system control.</p>
+                <p>Help us expand the custom Mithl Kernel. We need optimization of the Intent
+                    Registry and integration with our custom VFS for deeper system control.</p>
             </div>
 
             <div class="card" style="margin-bottom: 2rem;">
@@ -51,14 +51,11 @@
 git clone https://github.com/DoguparthiAakash/Mithl-OS.git
 cd Mithl-OS
 
-# Build the Core
-cd modules/mithl_core && make
+# Build the OS
+make
 
-# Build the UI
-cd ../../userspace/gui && make
-
-# Run (requires sudo for fb0 access)
-sudo ./compositor
+# Run in Emulator (QEMU)
+make run
             </pre>
         </div>
     </main>
