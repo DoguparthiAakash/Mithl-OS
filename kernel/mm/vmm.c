@@ -28,9 +28,22 @@ static inline void vmm_flush_tlb_entry(void *addr) {
     asm volatile("invlpg (%0)" :: "r" (addr) : "memory");
 }
 
+static inline uint32_t vmm_get_cr3() {
+    uint32_t cr3;
+    asm volatile("mov %%cr3, %0" : "=r"(cr3));
+    return cr3;
+}
+
 // Map a single page
 int vmm_map_page(void* phys, void* virt) {
-    pd_entry_t* page_directory = kernel_page_directory;
+    // USE CURRENT PD (CR3) instead of global kernel_page_directory
+    // This supports multi-process isolation.
+    // If paging not enabled yet, use kernel_page_directory?
+    // CR3 might be 0 initially?
+    
+    pd_entry_t* page_directory = (pd_entry_t*)vmm_get_cr3();
+    if (!page_directory) page_directory = kernel_page_directory;
+    if (!page_directory) return 0; // Too early
     
     uint32_t pd_index = (uint32_t)virt >> 22;
     uint32_t pt_index = ((uint32_t)virt >> 12) & 0x03FF;
@@ -119,4 +132,69 @@ void vmm_init(boot_info_t* boot_info) {
     serial_write("[VMM] Enabling Paging (CR0)...\n");
     // 4. Enable Paging
     vmm_enable_paging_asm();
+}
+
+// Clone a Page Directory
+// For Fork: copy user-space mappings (deep copy pages), link kernel mappings.
+pd_entry_t* vmm_clone_directory(pd_entry_t* src) {
+    // 1. Alloc new PD
+    pd_entry_t* new_pd = (pd_entry_t*)pmm_alloc_block();
+    if (!new_pd) return 0;
+    
+    // 2. Clear
+    memset(new_pd, 0, PMM_PAGE_SIZE);
+    
+    // 3. Link Kernel Mappings
+    // Kernel is 0-128MB (Identity).
+    // In our simplified OS, we rely on the fact that Kernel PD is static for kernel space.
+    // We can copy entries from `kernel_page_directory`.
+    
+    // 1024 PDEs.
+    // Kernel: 0 -> 128MB. Each PDE covers 4MB.
+    // 128MB / 4MB = 32 entries.
+    // Copies first 32 entries (Identity Map)
+    for (int i=0; i<1024; i++) {
+        // If it's a Kernel entry (present in kernel_page_directory), link it.
+        // Simplified Logic: Copy EVERYTHING from kernel_page_directory initially.
+        // But for User pages in Src (if fork), we need Deep Copy.
+        
+        if (src[i] & I86_PDE_PRESENT) {
+            // Check if it's Kernel Space?
+            // Convention: Kernel < 0xC0000000? NO, we are Identity Mapped 0-128MB.
+            // Helper: Is this range Kernel?
+            // i=0..32 is Kernel (Low Identity).
+            // i=256+ (1GB+) might be other stuff.
+            
+            // For now: Link everything.
+            // TODO: DEEP COPY for User Pages implementation later.
+            // This is "Spawn Thread" style cloning (Shared Memory).
+            // For true Fork, we need to inspect user capability bit?
+            // Yes, I86_PDE_USER.
+            
+            if (src[i] & I86_PDE_USER) {
+                 // User Page Table. We need to clone the TABLE, and clone the PAGES.
+                 // This is complex Deep Copy logic.
+                 // IMPLEMENTATION DEFERRED for Fork Step.
+                 // For now, Shared Memory (Threads).
+                 new_pd[i] = src[i]; 
+            } else {
+                 // Kernel Page Table - Link Shared.
+                 new_pd[i] = src[i];
+            }
+        }
+    }
+    
+    // Self-Recursion? No, we don't use recursive mapping here yet.
+    
+    return new_pd;
+}
+
+void vmm_free_directory(pd_entry_t* pd) {
+    if (!pd) return;
+    // Iterate and free User Page Tables?
+    pmm_free_block(pd);
+}
+
+void vmm_switch_pd(pd_entry_t* pd) {
+    asm volatile("mov %0, %%cr3" :: "r"(pd));
 }

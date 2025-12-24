@@ -179,7 +179,7 @@ userspace/libc/%.o: userspace/libc/%.asm
 userspace/apps/hello/hello.elf: userspace/apps/hello/hello.c $(LIBC_OBJS)
 	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
 
-userspace/apps/calculator/calculator.elf: userspace/apps/calculator/main.c $(LIBC_OBJS)
+userspace/apps/calculator/calc.elf: userspace/apps/calculator/main.c $(LIBC_OBJS)
 	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
 
 userspace/apps/ls/ls.elf: userspace/apps/ls/ls.c $(LIBC_OBJS)
@@ -203,8 +203,17 @@ userspace/apps/mv/mv.elf: userspace/apps/mv/mv.c $(LIBC_OBJS)
 userspace/apps/cc/cc.elf: userspace/apps/cc/cc.c $(LIBC_OBJS)
 	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
 
+userspace/apps/notepad/notepad.elf: userspace/apps/notepad/notepad.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
+userspace/apps/fork_test/fork_test.elf: userspace/apps/fork_test/fork_test.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
+userspace/apps/ccl/ccl.elf: userspace/apps/ccl/ccl.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
 # Create bootable ISO (BIOS only for now)
-iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calculator.elf userspace/apps/ls/ls.elf userspace/apps/ps/ps.elf userspace/apps/cat/cat.elf userspace/apps/mkdir/mkdir.elf userspace/apps/cp/cp.elf userspace/apps/mv/mv.elf userspace/apps/cc/cc.elf
+iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.elf userspace/apps/ls/ls.elf userspace/apps/ps/ps.elf userspace/apps/cat/cat.elf userspace/apps/mkdir/mkdir.elf userspace/apps/cp/cp.elf userspace/apps/mv/mv.elf userspace/apps/cc/cc.elf userspace/apps/notepad/notepad.elf userspace/apps/fork_test/fork_test.elf userspace/apps/ccl/ccl.elf
 	rm -rf bootiso
 	mkdir -p bootiso/boot/grub
 	cp kernel.elf bootiso/boot/
@@ -231,9 +240,9 @@ iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calcula
 	fi
 	
 	# Add Calculator App
-	if [ -f userspace/apps/calculator/calculator.elf ]; then \
-	  cp userspace/apps/calculator/calculator.elf bootiso/boot/; \
-	  echo '  module2 /boot/calculator.elf calculator.elf' >> bootiso/boot/grub/grub.cfg; \
+	if [ -f userspace/apps/calculator/calc.elf ]; then \
+	  cp userspace/apps/calculator/calc.elf bootiso/boot/; \
+	  echo '  module2 /boot/calc.elf calc.elf' >> bootiso/boot/grub/grub.cfg; \
 	fi
 	
 	# Add LS App
@@ -282,7 +291,22 @@ iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calcula
 	  cp userspace/apps/cc/test.c bootiso/boot/; \
 	  echo '  module2 /boot/test.c test.c' >> bootiso/boot/grub/grub.cfg; \
 	fi
+
+	if [ -f userspace/apps/notepad/notepad.elf ]; then \
+	  cp userspace/apps/notepad/notepad.elf bootiso/boot/; \
+	  echo '  module2 /boot/notepad.elf notepad.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
 	
+	if [ -f userspace/apps/notepad/notepad.c ]; then \
+	  cp userspace/apps/notepad/notepad.c bootiso/boot/; \
+	  echo '  module2 /boot/notepad.c notepad.c' >> bootiso/boot/grub/grub.cfg; \
+	fi
+	
+	if [ -f userspace/apps/ccl/ccl.elf ]; then \
+	  cp userspace/apps/ccl/ccl.elf bootiso/boot/; \
+	  echo '  module2 /boot/ccl.elf ccl.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+
 	echo '  boot' >> bootiso/boot/grub/grub.cfg
 	echo '}' >> bootiso/boot/grub/grub.cfg
 	

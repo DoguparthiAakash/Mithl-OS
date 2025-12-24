@@ -25,7 +25,7 @@ typedef struct {
 typedef struct {
     uint32_t mod_start;
     uint32_t mod_end;
-    char* string; // Cmdline / Name
+    char string[64]; // Cmdline / Name (Fixed buffer to avoid corruption)
     uint32_t reserved;
 } boot_module_t;
 
@@ -38,7 +38,7 @@ typedef struct {
     // Framebuffer
     boot_framebuffer_t framebuffer;
     
-#define MAX_BOOT_MODULES 10
+#define MAX_BOOT_MODULES 32
 
     // Modules (Initrd, etc.)
     uint32_t mod_count;

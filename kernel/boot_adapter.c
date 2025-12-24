@@ -12,6 +12,14 @@ typedef uint32_t uintptr_t;
 #define MAX_MMAP_ENTRIES 64
 static boot_mmap_entry_t mmap_buffer[MAX_MMAP_ENTRIES];
 
+// MB1 Module Struct
+typedef struct {
+    uint32_t mod_start;
+    uint32_t mod_end;
+    uint32_t cmdline;
+    uint32_t pad;
+} mb1_module_t;
+
 static void parse_multiboot1(multiboot_info_t* mbi, boot_info_t* info) {
     info->bootloader_name = (mbi->flags & MULTIBOOT_FLAG_LOADER) ? (char*)mbi->boot_loader_name : "Multiboot 1 Loader";
     info->cmdline = (mbi->flags & MULTIBOOT_FLAG_CMDLINE) ? (char*)mbi->cmdline : "";
@@ -47,6 +55,51 @@ static void parse_multiboot1(multiboot_info_t* mbi, boot_info_t* info) {
     } else {
         info->framebuffer.addr = 0;
     }
+    // --- MB1 Module Parsing ---
+    if (mbi->flags & MULTIBOOT_FLAG_MODS) {
+        mb1_module_t *mods = (mb1_module_t *)mbi->mods_addr;
+        for (uint32_t i = 0; i < mbi->mods_count && info->mod_count < MAX_BOOT_MODULES; i++) {
+             boot_module_t *m = &info->modules[info->mod_count++];
+             m->mod_start = mods[i].mod_start;
+             m->mod_end = mods[i].mod_end;
+             
+             // Copy string
+             char *src = (char *)mods[i].cmdline;
+             int k=0;
+             if (src) {
+                 while (src[k] && k < 63) {
+                     m->string[k] = src[k];
+                     k++;
+                 }
+             }
+             m->string[k] = 0;
+             
+             // Debug
+             // serial_write("[MB1] Found Module: ");
+             // if (m->string) serial_write(m->string);
+             // serial_write("\n");
+        }
+    }
+}
+
+// Minimal serial out for debugging early boot
+static void s_putc(char c) {
+    // AT&T Syntax: outb val, port
+    // port 0x3F8 > 255 so must be in DX
+    __asm__ volatile("outb %%al, %%dx" : : "a"(c), "d"((uint16_t)0x3F8));
+}
+static void s_writes(const char *s) {
+    while(*s) s_putc(*s++);
+}
+static void s_write_hex(uint32_t n) {
+    char buf[9];
+    char *digits = "0123456789ABCDEF";
+    for(int i=0; i<8; i++) {
+        buf[7-i] = digits[n & 0xF];
+        n >>= 4;
+    }
+    buf[8] = 0;
+    s_writes(buf);
 }
 
 static void parse_multiboot2(unsigned long addr, boot_info_t* info) {
@@ -64,8 +117,12 @@ static void parse_multiboot2(unsigned long addr, boot_info_t* info) {
     info->bootloader_name = "Multiboot 2 Loader";
     info->cmdline = "";
     info->acpi_rsdp = 0;
+    
+    s_writes("[MB2] Parsing Tags...\n");
 
     while (tag->type != MULTIBOOT_TAG_TYPE_END) {
+        s_writes("[MB2] Tag Type: "); s_write_hex(tag->type); s_writes("\n");
+        
         switch (tag->type) {
             case MULTIBOOT_TAG_TYPE_CMDLINE:
                 info->cmdline = ((multiboot_tag_string_t*)tag)->string;
@@ -123,11 +180,23 @@ static void parse_multiboot2(unsigned long addr, boot_info_t* info) {
             
             case MULTIBOOT_TAG_TYPE_MODULE: {
                 multiboot_tag_module_t *mod = (multiboot_tag_module_t *)tag;
+                s_writes("[MB2] Found Module: "); s_writes((char*)mod->string); s_writes("\n");
+                
                 if (info->mod_count < MAX_BOOT_MODULES) {
                     boot_module_t* m = &info->modules[info->mod_count++];
                     m->mod_start = mod->mod_start;
                     m->mod_end = mod->mod_end;
-                    m->string = (char*)mod->string;
+                    
+                    // Manual copy to safe buffer
+                    char *src = (char*)mod->string;
+                    int k = 0;
+                    if (src) {
+                        while(src[k] && k < 63) {
+                            m->string[k] = src[k];
+                            k++;
+                        }
+                    }
+                    m->string[k] = 0;
                 }
                 break;
             }

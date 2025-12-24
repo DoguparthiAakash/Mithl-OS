@@ -227,128 +227,90 @@ void terminal_run_command(terminal_t *term, const char *command) {
         return;
     }
     
-    // Built-in Commands using VFS (legacy)
-    // 1. Built-in Commands
-    if (memcmp(command, "help", 4) == 0) {
-        terminal_print(term, "Mithl-OS Advanced Terminal\n");
-        terminal_print(term, "==========================\n");
-        terminal_print(term, "Built-in Commands:\n");
-        terminal_print(term, "  help      Show this help message.\n");
-        terminal_print(term, "  clear     Clear the terminal screen.\n");
-        terminal_print(term, "  cd <dir>  Change directory (e.g., cd /home).\n");
-        terminal_print(term, "  pwd       Print working directory.\n");
-        terminal_print(term, "  whoami    Show current user.\n");
-        terminal_print(term, "  date      Show system date/time.\n");
-        terminal_print(term, "  exit      Close the terminal.\n");
-        terminal_print(term, "\n");
-        terminal_print(term, "System Utilities (Userspace):\n");
-        terminal_print(term, "  ls        List directory contents.\n");
-        terminal_print(term, "  ps        List running processes.\n");
-        terminal_print(term, "  cat <f>   Display file contents.\n");
-        terminal_print(term, "\n");
-        terminal_print(term, "Applications:\n");
-        terminal_print(term, "  hello     Running 'Hello World' GUI App.\n");
-        terminal_print(term, "  calc      Launch Calculator.\n");
-    }
-    else if (memcmp(command, "ls", 2) == 0) {
-        // Try to execute /ls.elf
-        extern fs_node_t *finddir_fs(fs_node_t *node, char *name);
-        extern fs_node_t *fs_root;
+    // Built-int Commands
+    if (memcmp(command, "cd ", 3) == 0) {
+        char *path = (char*)command + 3;
+        while(*path == ' ') path++;
         
-        // Fast path: check if /ls.elf exists
-        if (finddir_fs(fs_root, "ls.elf")) {
-             process_create_elf("ls", "/ls.elf", "");
-             // Note: It runs async. Prompt appears immediately.
-             // Ideal: wait for process.
+        // Handle ~
+        if (path[0] == '~') {
+            // In a real OS, we'd resolve HOME. Here hardcode.
+            // But we don't have chdir syscall yet. 
+            // We just updated prompt manually in previous code?
+            // "cd: chdir not implemented yet." was printed previously.
+            terminal_print(term, "cd: implemented in VFS but terminal needs syscall.\n");
         } else {
-             terminal_print(term, "ls: Command not found or /ls.elf missing.\n");
+             terminal_print(term, "cd: implemented in VFS but terminal needs syscall.\n");
         }
-    }
-    else if (memcmp(command, "cat ", 4) == 0) {
-        // Extract arguments
-        char *arg = (char*)command + 4;
-        while(*arg == ' ') arg++;
-        
-         if (finddir_fs(fs_root, "cat.elf")) {
-             process_create_elf("cat", "/cat.elf", arg);
-         } else {
-             terminal_print(term, "cat: /cat.elf not found.\n");
-         }
-    }
-    else if (memcmp(command, "ps", 2) == 0) {
-        extern fs_node_t *finddir_fs(fs_node_t *node, char *name);
-        extern fs_node_t *fs_root;
-        if (finddir_fs(fs_root, "ps.elf")) {
-             process_create_elf("ps", "/ps.elf", "");
-        } else {
-             terminal_print(term, "ps: Command not found or /ps.elf missing.\n");
-        }
-    }
-    else if (memcmp(command, "calc", 4) == 0) {
-         process_create_elf("Calculator", "/calculator.elf", "");
-    }
-    else if (memcmp(command, "hello", 5) == 0) {
-         process_create_elf("Hello", "/hello.elf", "");
-    }
-    else if (memcmp(command, "mkdir ", 6) == 0) {
-         char *arg = (char*)command + 6;
-         while(*arg == ' ') arg++;
-         
-         if (finddir_fs(fs_root, "mkdir.elf")) {
-             process_create_elf("mkdir", "/mkdir.elf", arg);
-         } else {
-             terminal_print(term, "mkdir: /mkdir.elf not found.\n");
-         }
-    }
-    else if (memcmp(command, "cp ", 3) == 0) {
-         char *arg = (char*)command + 3;
-         while(*arg == ' ') arg++;
-         
-         if (finddir_fs(fs_root, "cp.elf")) {
-             process_create_elf("cp", "/cp.elf", arg);
-         } else {
-             terminal_print(term, "cp: /cp.elf not found.\n");
-         }
-    }
-    else if (memcmp(command, "mv ", 3) == 0) {
-         char *arg = (char*)command + 3;
-         while(*arg == ' ') arg++;
-         
-         if (finddir_fs(fs_root, "mv.elf")) {
-             process_create_elf("mv", "/mv.elf", arg);
-         } else {
-             terminal_print(term, "mv: /mv.elf not found.\n");
-         }
-    }
-    else if (memcmp(command, "cc ", 3) == 0) {
-         char *arg = (char*)command + 3;
-         while(*arg == ' ') arg++;
-         
-         if (finddir_fs(fs_root, "cc.elf")) {
-             process_create_elf("cc", "/cc.elf", arg);
-         } else {
-             terminal_print(term, "cc: /cc.elf not found.\n");
-         }
     }
     else if (memcmp(command, "clear", 5) == 0) {
-        // Handled above usually, but fallback
         memset(term->buffer, 0, sizeof(term->buffer));
         term->cursor_x = 0; term->cursor_y = 0;
     }
-    else if (memcmp(command, "pwd", 3) == 0) {
-        terminal_print(term, "/\n");
+    else if (memcmp(command, "help", 4) == 0) {
+        terminal_print(term, "Mithl-OS Shell\n");
+        terminal_print(term, "Built-ins: cd, clear, exit, help\n");
+        terminal_print(term, "Available: ls, ccl <file.c>, notepad, calc\n");
     }
-    else if (memcmp(command, "date", 4) == 0) {
-        terminal_print(term, "Current Time: TBD (RTC not linked)\n");
-    }
-    // Generic ELF Launcher (e.g. ./program.elf)
-    else if (command[0] == '/' && strlen(command) > 4) {
-         process_create_elf("UserApp", command, "");
+    else if (memcmp(command, "exit", 4) == 0) {
+        // TODO: Exit
     }
     else {
-        terminal_print(term, "Unknown command: ");
-        terminal_print(term, command);
-        terminal_print(term, "\n");
+        // External Command Execution
+        char cmd_buf[128];
+        int i=0;
+        while(command[i] && command[i] != ' ' && i<63) {
+            cmd_buf[i] = command[i];
+            i++;
+        }
+        cmd_buf[i] = 0;
+        
+        char *args = (char*)command + i;
+        while(*args == ' ') args++;
+        
+        extern fs_node_t *fs_root;
+        extern fs_node_t *finddir_fs(fs_node_t *node, char *name);
+        
+        char elf_name[64];
+        strcpy(elf_name, cmd_buf);
+        int len = strlen(elf_name);
+        if (len < 4 || strcmp(elf_name + len - 4, ".elf") != 0) {
+            strcat(elf_name, ".elf");
+        }
+        
+        // Strategy:
+        // 1. Check Root (/)
+        // 2. Check /boot/
+        
+        if (finddir_fs(fs_root, elf_name)) {
+             char full_path[128];
+             full_path[0]='/'; strcpy(full_path+1, elf_name);
+             process_create_elf(cmd_buf, full_path, args);
+        } else {
+            // Check /boot
+            // We need to look inside "boot" directory.
+            fs_node_t *boot_node = finddir_fs(fs_root, "boot");
+            int found_in_boot = 0;
+            if (boot_node) {
+                if (finddir_fs(boot_node, elf_name)) {
+                    char full_path[128];
+                    // snprintf not avail?
+                    strcpy(full_path, "/boot/");
+                    int k=0, o=6;
+                    while(elf_name[k]) full_path[o++] = elf_name[k++];
+                    full_path[o] = 0;
+                    
+                    process_create_elf(cmd_buf, full_path, args);
+                    found_in_boot = 1;
+                }
+            }
+            
+            if (!found_in_boot) {
+                terminal_print(term, "Command not found: ");
+                terminal_print(term, cmd_buf);
+                terminal_print(term, "\n");
+            }
+        }
     }
     
     terminal_print_prompt(term);

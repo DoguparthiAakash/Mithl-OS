@@ -40,7 +40,16 @@ typedef struct {
     char name[128];
     uint32_t ino;
 } dirent_t;
+// Stdio
+void print(const char *s);
+void gets(char *buf);
 
+// Process
+int fork();
+int waitpid(int pid, int *status, int options);
+char getchar();
+
+// File Operations
 int open(const char *pathname, int flags);
 int close(int fd);
 int read(int fd, void *buf, int count);
@@ -49,7 +58,12 @@ dirent_t *readdir(int fd);
 int mkdir(const char *path, uint32_t mode);
 int unlink(const char *pathname);
 int rename(const char *oldpath, const char *newpath);
+int unlink(const char *pathname);
+int rename(const char *oldpath, const char *newpath);
 int creat(const char *pathname, uint32_t mode);
+
+// Exec
+int execve(const char *filename, char *const argv[], char *const envp[]);
 
 // Process List
 typedef struct {

@@ -164,15 +164,24 @@ fs_node_t *allocate_node(const char *name, uint32_t flags) {
     return node;
 }
 
-fs_node_t *ramfs_create_file(const char *name, const char *content) {
+// Fixed: Supports binary data with explicit length
+fs_node_t *ramfs_create_file_ex(const char *name, const char *data, uint32_t len) {
     fs_node_t *node = allocate_node(name, FS_FILE);
-    uint32_t len = strlen(content);
-    char *buf = (char*)memory_alloc(len + 1);
-    strcpy(buf, content);
+    char *buf = (char*)memory_alloc(len + 1); // +1 safety
+    
+    if (data && len > 0) {
+        memcpy(buf, data, len);
+    }
+    buf[len] = 0; // Null term just in case text
     
     node->length = len;
-    node->impl = (uint32_t)buf; // Store data pointer in impl
+    node->impl = (uint32_t)buf;
     return node;
+}
+
+// Legacy wrapper for text
+fs_node_t *ramfs_create_file(const char *name, const char *content) {
+    return ramfs_create_file_ex(name, content, strlen(content));
 }
 
 void ramfs_vfs_create(fs_node_t *parent, char *name, uint16_t permission);
@@ -279,20 +288,17 @@ void ramfs_load_modules(boot_info_t *info) {
         
         // Create file
         uint32_t size = mod->mod_end - mod->mod_start;
-        // Optimization: Don't copy, just point to module location? 
-        // For simplicity/safety, we COPY because modules might be reclaimed if we use PMM poorly.
-        // But our PMM is dumb, so it might mark used.
-        // Let's alloc and copy to be safe in `ramfs_create_file`.
-        // Wait, `ramfs_create_file` takes a string content. We need binary support.
         
-        fs_node_t *node = allocate_node(basename, FS_FILE);
-        char *buf = (char*)memory_alloc(size);
-        memcpy(buf, (void*)mod->mod_start, size);
-        
-        node->length = size;
-        node->impl = (uint32_t)buf;
+        // Use binary safe creation
+        fs_node_t *node = ramfs_create_file_ex(basename, (const char*)mod->mod_start, size);
         
         ramfs_add_child(fs_root, node);
+        
+        // Also log to Serial because Console might be hidden
+        extern void serial_write(const char *s); // Forward decl
+        serial_write("[RAMFS] Loaded Module: ");
+        serial_write(basename);
+        serial_write("\n");
         
         console_write("  Loaded: ");
         console_write(basename);

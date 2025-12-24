@@ -6,6 +6,7 @@
 #include "process.h"
 #include "process.h"
 #include "vfs.h"
+#include "input.h"
 
 extern process_t *current_process;
 
@@ -35,6 +36,28 @@ void syscall_handler(registers_t *regs) {
     int ret = 0;
 
     switch (syscall_nr) {
+
+#define SYS_WAITPID   7
+
+        case SYS_FORK:
+            {
+                // Passing registers to clone the trap frame
+                extern int process_fork(registers_t *regs);
+                ret = process_fork(regs);
+            }
+            break;
+
+        case SYS_WAITPID:
+            {
+                int pid = regs->ebx;
+                int *status = (int*)regs->ecx;
+                int options = regs->edx;
+                
+                extern int process_waitpid(int pid, int *status, int options);
+                ret = process_waitpid(pid, status, options);
+            }
+            break;
+
         case SYS_WRITE:
             {
                 // int fd = regs->ebx;
@@ -75,7 +98,31 @@ void syscall_handler(registers_t *regs) {
                 char *buf = (char*)regs->ecx;
                 uint32_t count = regs->edx;
                 
-                if (current_process && fd >= 0 && fd < 256 && current_process->fd_table[fd]) {
+                if (fd == 0) {
+                     // STDIN (Keyboard)
+                     // Poll for key
+                     // Note: Race condition with GUI input_poll, but suitable for single-tasking demo
+                     
+                     // Simple Blocking Read (1 char)
+                     if (count > 0) {
+                         while(1) {
+                             if (keyboard_event_ready()) {
+                                  key_event_t *ke = receive_key_event();
+                                  if (ke && ke->action == KEY_PRESS && ke->ascii) {
+                                      buf[0] = ke->ascii;
+                                      ret = 1; 
+                                      memory_free(ke);
+                                      break;
+                                  }
+                                  if (ke) { memory_free(ke); }
+                             }
+                             // Yield
+                             extern void switch_task(void);
+                             switch_task();
+                         }
+                     } else { ret = 0; }
+                }
+                else if (current_process && fd >= 0 && fd < 256 && current_process->fd_table[fd]) {
                     struct file_descriptor *desc = current_process->fd_table[fd];
                     if (desc->node) {
                         uint32_t read_bytes = read_fs(desc->node, desc->offset, count, (uint8_t*)buf);

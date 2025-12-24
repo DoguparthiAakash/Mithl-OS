@@ -15,9 +15,6 @@ void exit(int status) {
     while(1);
 }
 
-void print(const char *msg) {
-    syscall_1(SYS_MITHL_LOG, (int)msg);
-}
 
 int create_window(const char *title, int x, int y, int w, int h) {
     // We need 5 arguments.
@@ -28,10 +25,7 @@ int create_window(const char *title, int x, int y, int w, int h) {
     return syscall_5(SYS_MITHL_GUI_CREATE, (int)title, x, y, w, h);
 }
 
-#define SYS_EXECVE 11
-int execve(const char *filename, char *const argv[], char *const envp[]) {
-    return syscall_3(SYS_EXECVE, (int)filename, (int)argv, (int)envp);
-}
+// Duplicate definition removed from here
 
 #define SYS_GET_EVENT 103
 int get_event(gui_event_t *event) {
@@ -75,12 +69,50 @@ int close(int fd) {
     return syscall_1(SYS_CLOSE, fd);
 }
 
+int write(int fd, const void *buf, int count) {
+    return syscall_3(SYS_WRITE, fd, (int)buf, count);
+}
+
+// Stdin Support
 int read(int fd, void *buf, int count) {
     return syscall_3(SYS_READ, fd, (int)buf, count);
 }
 
-int write(int fd, const void *buf, int count) {
-    return syscall_3(SYS_WRITE, fd, (int)buf, count);
+char getchar() {
+    char c = 0;
+    read(0, &c, 1);
+    return c;
+}
+
+void gets(char *buf) {
+    int i = 0;
+    while(1) {
+        char c = getchar();
+        if (c == '\n') {
+            buf[i] = 0;
+            // Echo newline?
+            // console_write("\n"); // syscall-based print actually
+            print("\n");
+            return;
+        }
+        if (c == '\b') {
+            if (i > 0) {
+                i--;
+                // print space backspace hack?
+                print("\b \b"); // Erase char on console
+            }
+        } else if (c) {
+            buf[i++] = c;
+            // Echo char
+            char str[2] = {c, 0};
+            print(str);
+        }
+    }
+}
+
+void print(const char *s) {
+    int len = 0; while(s[len]) len++;
+    write(1, s, len); // Use write to stdout
 }
 
 static dirent_t readdir_buf;
@@ -120,4 +152,19 @@ int rename(const char *oldpath, const char *newpath) {
 #define SYS_CREAT 8
 int creat(const char *pathname, uint32_t mode) {
     return syscall_3(SYS_CREAT, (int)pathname, mode, 0);
+}
+
+#define SYS_FORK 2
+int fork() {
+    return syscall_0(SYS_FORK);
+}
+
+#define SYS_WAITPID 7
+int waitpid(int pid, int *status, int options) {
+    return syscall_3(SYS_WAITPID, pid, (int)status, options);
+}
+
+#define SYS_EXECVE 11
+int execve(const char *filename, char *const argv[], char *const envp[]) {
+    return syscall_3(SYS_EXECVE, (int)filename, (int)argv, (int)envp);
 }

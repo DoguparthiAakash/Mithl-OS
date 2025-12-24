@@ -24,6 +24,7 @@ typedef struct process {
     uint32_t esp;               // Stack Pointer
     uint32_t ebp;               // Base Pointer
     uint32_t eip;               // Instruction Pointer (Entry)
+    void *kernel_stack;         // Pointer to bottom of allocated kernel stack
     
     uint32_t page_directory;    // Physical Address of Page Directory (CR3)
     
