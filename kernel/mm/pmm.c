@@ -96,6 +96,16 @@ void pmm_init(boot_info_t* boot_info) {
     
     // De-initialize (mark used) 0 to kernel_end + padding
     pmm_deinit_region(0x0, kernel_end + 1024*1024); // +1MB for safety/stack
+
+    // 4. Reserve Multiboot Modules (Initrd, etc.)
+    // CRITICAL: Prevent PMM from handing out module memory!
+    for (uint32_t i = 0; i < boot_info->mod_count; i++) {
+        boot_module_t *mod = &boot_info->modules[i];
+        if (mod->mod_end > mod->mod_start) {
+            pmm_deinit_region(mod->mod_start, mod->mod_end - mod->mod_start);
+            // console_log("[PMM] Reserved Module Memory\n");
+        }
+    }
 }
 
 void pmm_init_region(uint32_t base, size_t size) {

@@ -32,8 +32,8 @@ uint32_t elf_load_file(const char *filename) {
     console_log("\n");
 
     // 1. Open File
-    extern fs_node_t *fs_root; // From kernel.c (or ideally a get_root() function)
-    fs_node_t *file = finddir_fs(fs_root, (char*)filename); // Cast const away for now
+    // Use vfs_resolve_path to handle absolute paths properly
+    fs_node_t *file = vfs_resolve_path((char*)filename);
     
     if (!file) {
         console_log("[ELF] Error: File not found.\n");

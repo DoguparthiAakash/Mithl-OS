@@ -31,6 +31,7 @@ typedef struct process {
     // UNIX-like additions
     int parent_pid;
     int exit_code;
+    uint32_t heap_end;          // Program Break (brk) for heap expansion
     
     // File Descriptor Table
     // We need a helper struct to track offset per FD

@@ -68,6 +68,7 @@ process_t *process_create(const char *name, void (*entry_point)(void)) {
     // Initialize UNIX fields
     proc->parent_pid = -1;
     proc->exit_code = 0;
+    proc->heap_end = 0x10000000; // Start Heap at 256MB mark (Temporary safe zone)
     for(int i=0; i<256; i++) proc->fd_table[i] = NULL;
     
     // VMM: Clone Kernel Directory

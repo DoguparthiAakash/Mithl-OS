@@ -7,6 +7,8 @@
 #include "process.h"
 #include "vfs.h"
 #include "input.h"
+#include "mm/pmm.h"
+#include "mm/vmm.h"
 
 extern process_t *current_process;
 
@@ -18,7 +20,23 @@ extern process_t *current_process;
 #define SYS_WRITE     4
 #define SYS_OPEN      5
 #define SYS_CLOSE     6
+#define SYS_WAITPID   7
+#define SYS_CREAT     8
+#define SYS_LINK      9
+#define SYS_UNLINK    10
 #define SYS_EXECVE    11
+#define SYS_CHDIR     12
+#define SYS_TIME      13
+#define SYS_MKNOD     14
+#define SYS_CHMOD     15
+#define SYS_LCHOWN    16
+#define SYS_GETPID    20
+#define SYS_MOUNT     21
+#define SYS_KILL      37
+#define SYS_RENAME    38
+#define SYS_BRK       45
+#define SYS_IOCTL     54
+#define SYS_UNAME     122
 
 // Custom Mithl-OS Syscalls
 #define SYS_MITHL_GUI_CREATE  100
@@ -37,7 +55,61 @@ void syscall_handler(registers_t *regs) {
 
     switch (syscall_nr) {
 
-#define SYS_WAITPID   7
+        case SYS_GETPID:
+            {
+                if (current_process) ret = current_process->pid;
+                else ret = 0;
+            }
+            break;
+
+        case SYS_BRK:
+            {
+                uint32_t new_brk = regs->ebx;
+                if (current_process) {
+                    if (new_brk == 0) {
+                        ret = current_process->heap_end;
+                    } else if (new_brk > current_process->heap_end) {
+                        // Expand Heap
+                        // Align to page
+                        uint32_t start_alloc = (current_process->heap_end + 0xFFF) & 0xFFFFF000;
+                        uint32_t end_alloc = (new_brk + 0xFFF) & 0xFFFFF000;
+                        
+                        // Map pages
+                        for (uint32_t addr = start_alloc; addr < end_alloc; addr += 4096) {
+                            void *phys = pmm_alloc_block();
+                            if (phys) vmm_map_page(phys, (void*)addr);
+                        }
+                        
+                        current_process->heap_end = new_brk;
+                        ret = new_brk;
+                    } else {
+                         // Shrink (ignore free for now)
+                        current_process->heap_end = new_brk;
+                        ret = new_brk;
+                    }
+                } else {
+                    ret = 0;
+                }
+            }
+            break;
+
+        case SYS_IOCTL:
+            {
+                // int fd = regs->ebx;
+                // int cmd = regs->ecx;
+                // STUB: Always success for ISATTY style checks
+                ret = 0;
+            }
+            break;
+
+        case SYS_UNAME:
+            {
+                 // Identify as Linux to satisfy checks
+                 // struct utsname *buf = (struct utsname*)regs->ebx;
+                 // Stub
+                 ret = 0;
+            }
+            break;
 
         case SYS_FORK:
             {
@@ -85,6 +157,8 @@ void syscall_handler(registers_t *regs) {
                      // Read from FILE? SYS_WRITE to FILE?
                      // Ah, this is WRITE. 
                      struct file_descriptor *desc = current_process->fd_table[fd];
+                     (void)desc; // Silence unused warning
+                     // TODO: Implement write_fs logic tracking offset
                      // TODO: Implement write_fs logic tracking offset
                      // For now, support stdout only.
                      ret = 0; 
