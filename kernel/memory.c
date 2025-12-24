@@ -135,40 +135,53 @@ static void memory_coalesce_full(void) {
 }
 
 // Allocate memory
+// Allocate memory (Thread Safe)
 void *memory_alloc(size_t size)
 {
     if (size == 0) return NULL;
     
+    // Critical Section: Disable Interrupts
+    asm volatile("cli");
+    
     size_t aligned_size = ALIGN(size);
     size_t total_req = aligned_size + HEADER_SIZE;
     
-    memory_header_t *curr = heap_head;
     memory_header_t *best_fit = NULL;
     
-    // 1. Scan for Free Block
-    while (curr) {
-        if (!curr->used && curr->size >= total_req) {
-            best_fit = curr;
-            break; 
+    // Iterative allocation loop (avoids recursion)
+    // Try max 2 times (Scan -> Expand -> Scan)
+    for (int attempt = 0; attempt < 2; attempt++) {
+        memory_header_t *curr = heap_head;
+        best_fit = NULL;
+        
+        // 1. Scan for Free Block
+        while (curr) {
+            if (!curr->used && curr->size >= total_req) {
+                best_fit = curr;
+                break; 
+            }
+            curr = curr->next;
         }
-        curr = curr->next;
+        
+        if (best_fit) break; // Found!
+        
+        // 2. Expand Heap if not found
+        if (attempt == 0) {
+            size_t needed_bytes = total_req;
+            uint32_t needed_pages = (needed_bytes + PAGE_SIZE - 1) / PAGE_SIZE;
+            if (needed_pages < 32) needed_pages = 32;
+            
+            if (!expand_heap(needed_pages)) {
+                asm volatile("sti");
+                return NULL; // OOM
+            }
+            // Loop continues to scan again
+        }
     }
     
-    // 2. If no block found, EXPAND HEAP
     if (!best_fit) {
-        // Calculate needed pages
-        // We might need just enough for this request, or a chunk.
-        // Let's alloc chunks of 1MB (256 pages) or requests size
-        size_t needed_bytes = total_req;
-        uint32_t needed_pages = (needed_bytes + PAGE_SIZE - 1) / PAGE_SIZE;
-        if (needed_pages < 32) needed_pages = 32; // Minimum 128KB expansion
-        
-        if (expand_heap(needed_pages)) {
-            // Retry scan (expand_heap adds to list and coalesces)
-            return memory_alloc(size); // Recursion (safe, bounded by RAM)
-        } else {
-            return NULL; // OOM
-        }
+        asm volatile("sti");
+        return NULL; // Still fail
     }
     
     // 3. Setup Block (Split if necessary)
@@ -190,6 +203,7 @@ void *memory_alloc(size_t size)
     // Valid zeroing
     for (size_t i=0; i<aligned_size; i++) ptr[i] = 0;
     
+    asm volatile("sti");
     return (void *)ptr;
 }
 
@@ -198,15 +212,22 @@ void memory_free(void *ptr)
 {
     if (!ptr) return;
     
+    // Critical Section
+    asm volatile("cli");
+    
     memory_header_t *header = (memory_header_t *)((uint8_t *)ptr - HEADER_SIZE);
     
-    // Basic validation
-    if (header->used == 0) return;
+    // Basic validation (check magic logic if available, here just used)
+    bool double_free = (header->used == 0);
     
-    header->used = 0;
-    memory_used_bytes -= header->size;
+    if (!double_free) {
+        header->used = 0;
+        memory_used_bytes -= header->size;
+        
+        memory_coalesce_full();
+    }
     
-    memory_coalesce_full();
+    asm volatile("sti");
 }
 
 size_t memory_get_used(void) { return memory_used_bytes; }

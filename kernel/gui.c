@@ -180,9 +180,16 @@ void gui_draw_recursive(gui_renderer_t *renderer, gui_element_t *element)
 // Post an event to the queue
 void gui_post_event(gui_event_t *event)
 {
+    extern void serial_write(const char*);
+    serial_write("[GUI] Posting Event...\n");
+    
     if (gui_mgr.event_queue && event)
     {
+        serial_write("[GUI] Queue valid, appending...\n");
         list_append(gui_mgr.event_queue, event);
+        serial_write("[GUI] Event Posted.\n");
+    } else {
+        serial_write("[GUI] CRITICAL: Event Queue is NULL!\n");
     }
 }
 
@@ -315,7 +322,11 @@ void gui_run(void)
                                copy->mouse.pos.x -= win->base.bounds.x;
                                copy->mouse.pos.y -= (win->base.bounds.y + title_h);
                           }
+                          
+                          // Critical Section: Protect list modification from Syscall preemption
+                          asm volatile("cli");
                           list_append(win->incoming_events, copy);
+                          asm volatile("sti");
                       }
                  }
             }

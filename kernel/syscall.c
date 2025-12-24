@@ -36,7 +36,31 @@ extern process_t *current_process;
 #define SYS_RENAME    38
 #define SYS_BRK       45
 #define SYS_IOCTL     54
+#define SYS_IOCTL     54
+#define SYS_MMAP      90
+#define SYS_MUNMAP    91
+#define SYS_FUTEX     240
 #define SYS_UNAME     122
+
+// mmap constants
+#define PROT_READ  0x1
+#define PROT_WRITE 0x2
+#define PROT_EXEC  0x4
+
+#define MAP_SHARED  0x01
+#define MAP_PRIVATE 0x02
+#define MAP_FIXED   0x10
+#define MAP_ANON    0x20
+#define MAP_ANONYMOUS 0x20
+
+struct mmap_args {
+    uint32_t addr;
+    uint32_t len;
+    uint32_t prot;
+    uint32_t flags;
+    uint32_t fd;
+    uint32_t offset;
+};
 
 // Custom Mithl-OS Syscalls
 #define SYS_MITHL_GUI_CREATE  100
@@ -97,7 +121,103 @@ void syscall_handler(registers_t *regs) {
             {
                 // int fd = regs->ebx;
                 // int cmd = regs->ecx;
-                // STUB: Always success for ISATTY style checks
+                ret = 0;
+            }
+            break;
+
+        case SYS_MMAP:
+            {
+                struct mmap_args *args = (struct mmap_args*)regs->ebx;
+                if (!args) { ret = -1; break; } // EFAULT
+
+                // console_write("[MMAP] Request\n");
+
+                // 1. Determine Address
+                uint32_t addr = args->addr;
+                uint32_t len = args->len;
+                if (len == 0) { ret = -1; break; }
+
+                // Align length to page size
+                if (len & 0xFFF) len = (len & 0xFFFFF000) + 4096;
+
+                if (addr == 0 || !(args->flags & MAP_FIXED)) {
+                    // Simple allocator: Use current heap end or search for space?
+                    // Heap End is `current_process->heap_end`.
+                    // mmap area usually starts separate from brk?
+                    // For V1, let's just append to heap_end like brk does, but be careful.
+                    // Or keep `mmap_end`?
+                    // Let's use `heap_end` for now as a unified userspace allocator.
+                    
+                    if (current_process) {
+                        addr = (current_process->heap_end + 0xFFF) & 0xFFFFF000;
+                        // Move heap end
+                        current_process->heap_end = addr + len;
+                    } else {
+                        ret = -1; break; 
+                    }
+                } else {
+                    // Fixed mapping requested (Dangerous if overlap).
+                    // We assume User knows what they are doing (e.g. ld-linux mapping sections).
+                    // Align addr
+                    addr &= 0xFFFFF000;
+                }
+
+                // 2. Allocate and Map Pages
+                for (uint32_t i = 0; i < len; i += 4096) {
+                    void *phys = pmm_alloc_block();
+                    if (!phys) {
+                         // OOM - Should rollback?
+                         ret = -1; 
+                         break;
+                    }
+                    vmm_map_page(0, phys, (void*)(addr + i));
+                    
+                    // Zero page for security (and spec compliance)
+                    memset((void*)(addr + i), 0, 4096);
+                }
+                
+                if (ret == -1) break;
+
+                // 3. Handle File Mapping
+                if (!(args->flags & MAP_ANONYMOUS)) {
+                     // Get FD
+                     int fd = args->fd;
+                     // Look up file
+                     if (current_process && fd >= 0 && fd < 256 && current_process->fd_table[fd]) {
+                          fs_node_t *file = current_process->fd_table[fd]->node;
+                          uint32_t offset = args->offset;
+                          
+                          // Read file content
+                          uint32_t read_len = len; 
+                          // Cap at file size?
+                          // read_fs handles EOF usually.
+                          
+                          read_fs(file, offset, read_len, (uint8_t*)addr);
+                     }
+                }
+
+                ret = addr;
+            }
+            break;
+
+        case SYS_MUNMAP:
+            {
+                // Unmap (Stub)
+                // We should free PMM pages and unmark VMM tables.
+                // For now, simple Success (0) to satisfy glibc cleanup.
+                ret = 0;
+            }
+            break;
+
+        case SYS_FUTEX:
+            {
+                // uint32_t *uaddr = (uint32_t*)regs->ebx;
+                // int op = regs->ecx;
+                // int val = regs->edx;
+                
+                // Stub: Always return 0 (Success/Woken).
+                // This prevents wait hangs but burns CPU if app spin-waits.
+                // Works for Glibc initialization.
                 ret = 0;
             }
             break;
@@ -378,6 +498,9 @@ void syscall_handler(registers_t *regs) {
                 // In future, pass window handle ID
                 gui_window_t *found = NULL;
                 
+                // CRITICAL: Protect Tree Traversal from Preemption (gui_bring_to_front modifies list)
+                asm volatile("cli");
+                
                 // Assuming root->children contains windows (Layout Manager dependent)
                 if (gui_mgr.root && gui_mgr.root->children) {
                     list_node_t *node = gui_mgr.root->children->head;
@@ -394,8 +517,27 @@ void syscall_handler(registers_t *regs) {
                     }
                 }
                 
-                if (found && found->incoming_events && found->incoming_events->head) {
-                    gui_event_t *ev = (gui_event_t*)list_pop_front(found->incoming_events);
+                if (!found) {
+                    asm volatile("sti");
+                    ret = -1;
+                    break;
+                }
+                
+                // Found window, now pop event (Already protected list access locally below, but we can keep CLI held for efficiency?)
+                // Actually, I already protected the POP below.
+                // But found->incoming_events pointer itself is stable (window struct).
+                // I will release lock here, then re-acquire for POP.
+                asm volatile("sti");
+                
+                if (found && found->incoming_events) {
+                    // Critical Section: Protect list access
+                    asm volatile("cli");
+                    gui_event_t *ev = NULL;
+                    if (found->incoming_events->head) {
+                         ev = (gui_event_t*)list_pop_front(found->incoming_events);
+                    }
+                    asm volatile("sti");
+
                     if (ev) {
                         // Copy to user buffer
                         // Note: Be careful with direct pointer deref if user address is bad (kernel checks needed normally)

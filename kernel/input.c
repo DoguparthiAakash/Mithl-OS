@@ -80,6 +80,9 @@ void input_poll(void)
                     gui_me->mouse.pos.x = me->x;
                     gui_me->mouse.pos.y = me->y;
                     gui_me->mouse.scroll_delta = 0; // Default
+                    
+                    extern void serial_write(const char*);
+                    serial_write("[INPUT] Posting Mouse Event...\n");
                     gui_post_event(gui_me);
                 } 
                 

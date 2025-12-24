@@ -269,8 +269,8 @@ void kmain(uint32_t magic, void* addr)
     // process_create_elf("Hello", "/hello.elf");
     // process_create_elf("Calculator", "/calculator.elf");
     // process_create_elf("ls", "/ls.elf");
-    process_create_elf("ps", "/ps.elf", "");
-    // process_create_elf("Shell", "/shell.elf", "");
+    // process_create_elf("ps", "/ps.elf", "");
+    process_create_elf("Shell", "/shell.elf", "");
     
     // Enable Interrupts (PIT will drive preemption)
     asm volatile("sti");

@@ -167,6 +167,11 @@ int process_exec(const char *filename, char *const argv[], char *const envp[]) {
     // In a real OS, we should clear the old address space first.
     // Here we assume "additive" loading or fresh fork.
     
+    extern void console_log(const char *msg);
+    // console_log("[PROCESS] Exec: ");
+    // console_log(filename);
+    // console_log("\n");
+    
     // We assume elf_load_file handles PT_INTERP recursion now.
     uint32_t entry = elf_load_file(filename);
     if (!entry) return -1;

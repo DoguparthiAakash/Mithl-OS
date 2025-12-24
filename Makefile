@@ -215,13 +215,16 @@ userspace/apps/ccl/ccl.elf: userspace/apps/ccl/ccl.c $(LIBC_OBJS)
 	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
 
 userspace/apps/filemgr/filemgr.elf: userspace/apps/filemgr/main.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -Iuserspace/apps/filemgr/icons -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+	$(CC) -m32 -ffreestanding -fno-pie -static -nostdlib -nostdinc -Iuserspace/libc -Iuserspace/apps/filemgr/icons -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
 
 userspace/apps/shell/shell.elf: userspace/apps/shell/shell.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+	$(CC) -m32 -ffreestanding -fno-pie -static -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
+userspace/apps/linker/linker.elf: userspace/apps/linker/linker.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -Wl,-Ttext=0x40000000 -o $@ $< userspace/libc/stdlib.o userspace/libc/syscall.o
 
 # Create bootable ISO (BIOS only for now)
-iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.elf userspace/apps/ls/ls.elf userspace/apps/ps/ps.elf userspace/apps/cat/cat.elf userspace/apps/mkdir/mkdir.elf userspace/apps/cp/cp.elf userspace/apps/mv/mv.elf userspace/apps/cc/cc.elf userspace/apps/notepad/notepad.elf userspace/apps/fork_test/fork_test.elf userspace/apps/ccl/ccl.elf userspace/apps/filemgr/filemgr.elf userspace/apps/shell/shell.elf
+iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.elf userspace/apps/ls/ls.elf userspace/apps/ps/ps.elf userspace/apps/cat/cat.elf userspace/apps/mkdir/mkdir.elf userspace/apps/cp/cp.elf userspace/apps/mv/mv.elf userspace/apps/cc/cc.elf userspace/apps/notepad/notepad.elf userspace/apps/fork_test/fork_test.elf userspace/apps/ccl/ccl.elf userspace/apps/filemgr/filemgr.elf userspace/apps/shell/shell.elf userspace/apps/linker/linker.elf
 	rm -rf bootiso
 	mkdir -p bootiso/boot/grub
 	cp kernel.elf bootiso/boot/
@@ -323,6 +326,12 @@ iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.el
 	if [ -f userspace/apps/shell/shell.elf ]; then \
 	  cp userspace/apps/shell/shell.elf bootiso/boot/; \
 	  echo '  module2 /boot/shell.elf shell.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+
+	# Mock Linker
+	if [ -f userspace/apps/linker/linker.elf ]; then \
+	  cp userspace/apps/linker/linker.elf bootiso/boot/; \
+	  echo '  module2 /boot/linker.elf /lib/ld-linux.so.2' >> bootiso/boot/grub/grub.cfg; \
 	fi
 
 	if [ -f userspace/apps/linux_test/hello_linux ]; then \
