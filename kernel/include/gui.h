@@ -136,6 +136,10 @@ typedef struct gui_window
     float split_ratio;               // 0.5 default. Percentage of parent space.
     
     int is_container;                // 1 if this is a split node, 0 if leaf content
+
+    /* --- Userspace Integration --- */
+    int owner_pid;                   // Process ID of the owner (0 = Kernel)
+    list_t *incoming_events;         // Queue of events pending delivery to Userspace
 } gui_window_t;
 
 /* Button structure */

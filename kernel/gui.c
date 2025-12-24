@@ -5,6 +5,9 @@
 #include "string.h"
 #include "wm.h"
 #include <theme.h>
+#include "process.h" // For current_process
+
+extern process_t *current_process;
 
 gui_manager_t gui_mgr;
 
@@ -288,6 +291,34 @@ void gui_run(void)
             gui_element_t *prev_hovered = gui_mgr.hovered_element;
             
             target->event_handler(target, event);
+
+            // Userspace Dispatch: If target is a window owned by a user process
+            {
+                 gui_window_t *win = NULL;
+                 if (target->type == GUI_ELEMENT_WINDOW) win = (gui_window_t*)target;
+                 // If target is child of window, find window?
+                 // For now simplicity: Just check if 'target' itself is window (since we dispatch to window handler)
+                 
+                 // If we found a window and it has an owner
+                 if (win && win->owner_pid > 0 && win->incoming_events) {
+                      // Clone event
+                      gui_event_t *copy = (gui_event_t*)memory_alloc(sizeof(gui_event_t));
+                      if (copy) {
+                          *copy = *event;
+                          // Convert to Window Relative Coords if Mouse Event
+                          if (event->type == GUI_EVENT_MOUSE_DOWN || 
+                              event->type == GUI_EVENT_MOUSE_UP || 
+                              event->type == GUI_EVENT_MOUSE_MOVE ||
+                              event->type == GUI_EVENT_MOUSE_SCROLL) {
+                               
+                               int title_h = 30; // Consistent Height
+                               copy->mouse.pos.x -= win->base.bounds.x;
+                               copy->mouse.pos.y -= (win->base.bounds.y + title_h);
+                          }
+                          list_append(win->incoming_events, copy);
+                      }
+                 }
+            }
             
             // Only invalidate on actual state changes or non-root elements
             if (event->type == GUI_EVENT_MOUSE_MOVE) {
@@ -746,6 +777,14 @@ gui_window_t *gui_create_window(const char *title, int x, int y, int width, int 
     
     win->tabs = list_create();
     win->active_tab = NULL;
+    
+    // Userspace Init
+    if (current_process) {
+        win->owner_pid = current_process->pid;
+    } else {
+        win->owner_pid = 0; // Kernel
+    }
+    win->incoming_events = list_create();
 
     win->base.event_handler = gui_window_event_handler;
     win->base.draw = gui_draw_window;

@@ -186,10 +186,142 @@ void syscall_handler(registers_t *regs) {
                 // Ensure we cast/convert types correctly if needed
                 gui_window_t *win = gui_create_window(title, regs->ecx, regs->edx, regs->esi, regs->edi);
                 
-                // We shouldn't return a pointer to userspace directly if it's kernel memory, 
+                // We shouldn't return a pointer to userspace directly if it's right kernel memory, 
                 // but for now let's just return 1 or the handle. 
                 // In a real OS we'd return a handle ID. Use the pointer as ID for now.
                 ret = (int)win; 
+            }
+            break;
+
+        case 103: // SYS_GET_EVENT
+            {
+                gui_event_t *user_buf = (gui_event_t*)regs->ebx;
+                if (!user_buf) { ret = -1; break; }
+
+                // Find window owned by current process (Simple Linear Search for now)
+                // In future, pass window handle ID
+                gui_window_t *found = NULL;
+                
+                // Assuming root->children contains windows (Layout Manager dependent)
+                if (gui_mgr.root && gui_mgr.root->children) {
+                    list_node_t *node = gui_mgr.root->children->head;
+                    while (node) {
+                        gui_element_t *el = (gui_element_t*)node->data;
+                        if (el->type == GUI_ELEMENT_WINDOW) {
+                             gui_window_t *w = (gui_window_t*)el;
+                             if (w->owner_pid == current_process->pid) {
+                                 found = w;
+                                 break;
+                             }
+                        }
+                        node = node->next;
+                    }
+                }
+                
+                if (found && found->incoming_events && found->incoming_events->head) {
+                    gui_event_t *ev = (gui_event_t*)list_pop_front(found->incoming_events);
+                    if (ev) {
+                        // Copy to user buffer
+                        // Note: Be careful with direct pointer deref if user address is bad (kernel checks needed normally)
+                        *user_buf = *ev; 
+                        memory_free(ev);
+                        ret = 1; // Event retrieved
+                    } else {
+                        ret = 0;
+                    }
+                } else {
+                    ret = 0; // No event
+                }
+            }
+            break;
+
+        case 104: // SYS_DRAW_RECT (x, y, w, h, color)
+            {
+                 // We need 5 args. regs->ebx, ecx, edx, esi, edi
+                 // ebx=x, ecx=y, edx=w, esi=h, edi=color
+                 int x = regs->ebx;
+                 int y = regs->ecx;
+                 int w = regs->edx;
+                 int h = regs->esi;
+                 uint32_t color = regs->edi;
+
+                 // Find Window (Refactor this later)
+                 gui_window_t *found = NULL;
+                 if (gui_mgr.root && gui_mgr.root->children) {
+                    list_node_t *node = gui_mgr.root->children->head;
+                    while (node) {
+                        gui_element_t *el = (gui_element_t*)node->data;
+                        if (el->type == GUI_ELEMENT_WINDOW) {
+                             gui_window_t *win = (gui_window_t*)el;
+                             if (win->owner_pid == current_process->pid) {
+                                 found = win;
+                                 break;
+                             }
+                        }
+                        node = node->next;
+                    }
+                 }
+                 
+                 if (found) {
+                     // Clip and Offset
+                     int title_h = 30;
+                     int win_x = found->base.bounds.x;
+                     int win_y = found->base.bounds.y + title_h;
+                     
+                     // Absolute coords
+                     int abs_x = win_x + x;
+                     int abs_y = win_y + y;
+                     
+                     // Basic Clipping against window bounds (not perfect, but safe)
+                     if (abs_x < win_x) abs_x = win_x;
+                     if (abs_y < win_y) abs_y = win_y;
+                     // width/height clipping todo
+                     
+                     rect_t r = {abs_x, abs_y, w, h};
+                     draw_rect_filled(r, color);
+                     gui_invalidate_rect(r); // Mark dirty
+                     ret = 0;
+                 } else {
+                     ret = -1;
+                 }
+            }
+            break;
+            
+        case 105: // SYS_DRAW_TEXT (msg, x, y, color)
+            {
+                 char *msg = (char*)regs->ebx;
+                 int x = regs->ecx;
+                 int y = regs->edx;
+                 uint32_t color = regs->esi;
+                 
+                 gui_window_t *found = NULL;
+                 if (gui_mgr.root && gui_mgr.root->children) {
+                    list_node_t *node = gui_mgr.root->children->head;
+                    while (node) {
+                        gui_element_t *el = (gui_element_t*)node->data;
+                        if (el->type == GUI_ELEMENT_WINDOW) {
+                             gui_window_t *win = (gui_window_t*)el;
+                             if (win->owner_pid == current_process->pid) {
+                                 found = win;
+                                 break;
+                             }
+                        }
+                        node = node->next;
+                    }
+                 }
+                 
+                 if (found) {
+                     int title_h = 30;
+                     int abs_x = found->base.bounds.x + x;
+                     int abs_y = found->base.bounds.y + title_h + y;
+                     
+                     draw_text(msg, abs_x, abs_y, color, 12); // Default size 12
+                     // Invalidate text area (guesstimate)
+                     gui_invalidate_rect((rect_t){abs_x, abs_y, strlen(msg)*10, 16});
+                     ret = 0;
+                 } else {
+                     ret = -1;
+                 }
             }
             break;
 

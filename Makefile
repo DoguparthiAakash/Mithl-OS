@@ -164,8 +164,26 @@ $(RUST_LIB):
 run: iso
 	qemu-system-x86_64 -cdrom Mithl.iso -serial stdio
 
+# Userspace Libc
+LIBC_SOURCES = userspace/libc/stdlib.c
+LIBC_ASM = userspace/libc/syscall.asm userspace/libc/crt0.asm
+LIBC_OBJS = $(LIBC_SOURCES:.c=.o) $(LIBC_ASM:.asm=.o)
+
+userspace/libc/%.o: userspace/libc/%.c
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -c $< -o $@
+
+userspace/libc/%.o: userspace/libc/%.asm
+	$(ASM) -f elf32 $< -o $@
+
+# Userspace Apps
+userspace/apps/hello/hello.elf: userspace/apps/hello/hello.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
+userspace/apps/calculator/calculator.elf: userspace/apps/calculator/main.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
 # Create bootable ISO (BIOS only for now)
-iso: kernel.elf
+iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calculator.elf
 	rm -rf bootiso
 	mkdir -p bootiso/boot/grub
 	cp kernel.elf bootiso/boot/
@@ -189,6 +207,12 @@ iso: kernel.elf
 	if [ -f userspace/apps/hello/hello.elf ]; then \
 	  cp userspace/apps/hello/hello.elf bootiso/boot/; \
 	  echo '  module2 /boot/hello.elf hello.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+	
+	# Add Calculator App
+	if [ -f userspace/apps/calculator/calculator.elf ]; then \
+	  cp userspace/apps/calculator/calculator.elf bootiso/boot/; \
+	  echo '  module2 /boot/calculator.elf calculator.elf' >> bootiso/boot/grub/grub.cfg; \
 	fi
 	
 	echo '  boot' >> bootiso/boot/grub/grub.cfg

@@ -3,7 +3,7 @@
 
 ![Mithl-OS Logo](OSLogo.png)
 
-**Mithl-OS** is a next-generation operating system designed to bridge the gap between **Artificial Intelligence** and **System Hardware**. Built on a hybrid architecture, it leverages the rock-solid stability of the **Linux Kernel** while introducing a novel **Semantic Agent Core** and a custom, high-performance **Teal UI**.
+**Mithl-OS** is a next-generation operating system designed to bridge the gap between **Artificial Intelligence** and **System Hardware**. Built completely from scratch, it features a novel **Semantic Agent Core** and a custom, high-performance **Teal UI** running on our own independent kernel.
 
 ---
 
@@ -16,9 +16,9 @@ Instead of clicking icons to execute binaries, Mithl-OS allows you to interact w
 ## 🏗 Hybrid Architecture
 Mithl-OS uses a unique "Helper" architecture to provide industry-standard features without losing its unique identity.
 
-1.  **The Foundation (Linux Helper)**: We utilize a stripped-down Linux Kernel as our Hardware Abstraction Layer. This ensures robust support for modern Wi-Fi, USB, and GPUs out of the box.
-2.  **The Soul (Mithl Core)**: A custom Kernel Module (`mithl_core.ko`) that injects our Semantic Registry and Intent Processing logic directly into the kernel's heart.
-3.  **The Face (Mithl GUI)**: A lightweight, custom-written Compositor that renders our signature Teal Desktop Environment directly to the Framebuffer (`/dev/fb0`), bypassing the bloat of X11 or Wayland.
+1.  **The Foundation**: We built our own Kernel and Hardware Abstraction Layer from the ground up. This custom kernel provides direct control over hardware resources, ensuring maximum performance without the overhead of legacy Unix-like systems.
+2.  **The Soul (Mithl Core)**: A custom Semantic Registry and Intent Processing logic deeply integrated into the kernel's heart.
+3.  **The Face (Mithl GUI)**: A lightweight, custom-written Compositor that renders our signature Teal Desktop Environment directly to the Framebuffer, offering zero-latency interaction.
 
 ## ✨ Key Features
 *   **Semantic Syscalls**: A new class of System Calls (`sys_agent_op`) allows applications to query the kernel for capabilities, not just files.
@@ -35,18 +35,14 @@ Mithl-OS uses a unique "Helper" architecture to provide industry-standard featur
 
 ### Build Instructions
 
-**1. Build the Semantic Core (Brain)**
+**1. Build the OS**
 ```bash
-cd modules/mithl_core
 make
-sudo insmod mithl_core.ko
 ```
 
-**2. Build the Desktop (Face)**
+**2. Run in Emulator**
 ```bash
-cd userspace/gui
-make
-sudo ./compositor
+make run
 ```
 
 ## 🤝 Contribute

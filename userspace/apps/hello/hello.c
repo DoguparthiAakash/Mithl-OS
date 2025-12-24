@@ -6,9 +6,14 @@ int main() {
     
     create_window("Hello App", 150, 150, 300, 200);
     
-    // Loop forever so the window stays open
+    // Loop and handle events
+    gui_event_t event;
     while(1) {
-        // Spin
+        if (get_event(&event)) {
+            if (event.type == GUI_EVENT_MOUSE_DOWN) {
+                print("Clicked!\n");
+            }
+        }
     }
     
     return 0;
