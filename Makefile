@@ -212,8 +212,11 @@ userspace/apps/fork_test/fork_test.elf: userspace/apps/fork_test/fork_test.c $(L
 userspace/apps/ccl/ccl.elf: userspace/apps/ccl/ccl.c $(LIBC_OBJS)
 	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
 
+userspace/apps/filemgr/filemgr.elf: userspace/apps/filemgr/main.c $(LIBC_OBJS)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -Iuserspace/apps/filemgr/icons -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+
 # Create bootable ISO (BIOS only for now)
-iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.elf userspace/apps/ls/ls.elf userspace/apps/ps/ps.elf userspace/apps/cat/cat.elf userspace/apps/mkdir/mkdir.elf userspace/apps/cp/cp.elf userspace/apps/mv/mv.elf userspace/apps/cc/cc.elf userspace/apps/notepad/notepad.elf userspace/apps/fork_test/fork_test.elf userspace/apps/ccl/ccl.elf
+iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.elf userspace/apps/ls/ls.elf userspace/apps/ps/ps.elf userspace/apps/cat/cat.elf userspace/apps/mkdir/mkdir.elf userspace/apps/cp/cp.elf userspace/apps/mv/mv.elf userspace/apps/cc/cc.elf userspace/apps/notepad/notepad.elf userspace/apps/fork_test/fork_test.elf userspace/apps/ccl/ccl.elf userspace/apps/filemgr/filemgr.elf
 	rm -rf bootiso
 	mkdir -p bootiso/boot/grub
 	cp kernel.elf bootiso/boot/
@@ -305,6 +308,11 @@ iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.el
 	if [ -f userspace/apps/ccl/ccl.elf ]; then \
 	  cp userspace/apps/ccl/ccl.elf bootiso/boot/; \
 	  echo '  module2 /boot/ccl.elf ccl.elf' >> bootiso/boot/grub/grub.cfg; \
+	fi
+
+	if [ -f userspace/apps/filemgr/filemgr.elf ]; then \
+	  cp userspace/apps/filemgr/filemgr.elf bootiso/boot/; \
+	  echo '  module2 /boot/filemgr.elf filemgr.elf' >> bootiso/boot/grub/grub.cfg; \
 	fi
 
 	if [ -f userspace/apps/linux_test/hello_linux ]; then \

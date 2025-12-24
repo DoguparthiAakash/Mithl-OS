@@ -55,6 +55,12 @@ void draw_text(const char *msg, int x, int y, uint32_t color) {
     syscall_5(SYS_DRAW_TEXT, (int)msg, x, y, color, 0);
 }
 
+#define SYS_DRAW_IMAGE 109
+void draw_image(const uint32_t *data, int x, int y, int w, int h) {
+    extern int syscall_5(int num, int arg1, int arg2, int arg3, int arg4, int arg5);
+    syscall_5(SYS_DRAW_IMAGE, (int)data, x, y, w, h);
+}
+
 // File System
 #define SYS_READ      3
 #define SYS_OPEN      5

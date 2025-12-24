@@ -18,6 +18,16 @@ extern int syscall_5(int num, int arg1, int arg2, int arg3, int arg4, int arg5);
 #define SYS_CLOSE     6
 #define SYS_WAITPID   7
 #define SYS_EXECVE    11
+#define SYS_MITHL_GUI_CREATE 100
+#define SYS_MITHL_GUI_BUTTON 101
+#define SYS_MITHL_LOG        102
+#define SYS_GET_EVENT        103
+#define SYS_DRAW_RECT        104
+#define SYS_DRAW_TEXT        105
+#define SYS_PROCESS_LIST     106
+#define SYS_GET_CMDLINE      107
+#define SYS_MKDIR            108
+#define SYS_DRAW_IMAGE       109
 
 // Helpers
 static inline void sys_exit(int code) {

@@ -1,11 +1,9 @@
 #ifndef STDLIB_H
 #define STDLIB_H
 
-// Basic Types
-typedef unsigned int uint32_t;
-typedef int int32_t;
-typedef unsigned short uint16_t;
-typedef unsigned char uint8_t;
+#include "stdint.h"
+
+// Basic Types (Removed, using stdint.h)
 
 // Process
 void exit(int status);
@@ -33,7 +31,9 @@ typedef struct {
 int create_window(const char *title, int x, int y, int w, int h);
 int get_event(gui_event_t *event);
 void draw_rect(int x, int y, int w, int h, uint32_t color);
+void draw_rect(int x, int y, int w, int h, uint32_t color);
 void draw_text(const char *msg, int x, int y, uint32_t color);
+void draw_image(const uint32_t *data, int x, int y, int w, int h);
 
 // File System
 typedef struct {

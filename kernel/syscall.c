@@ -640,6 +640,48 @@ void syscall_handler(registers_t *regs) {
             }
             break;
 
+        case 109: // SYS_DRAW_IMAGE (data, x, y, w, h)
+            {
+                // ebx = data*, ecx = x, edx = y, esi = w, edi = h
+                 uint32_t *img_data = (uint32_t*)regs->ebx;
+                 int x = regs->ecx;
+                 int y = regs->edx;
+                 int w = regs->esi;
+                 int h = regs->edi;
+
+                 gui_window_t *found = NULL;
+                 if (gui_mgr.root && gui_mgr.root->children) {
+                    list_node_t *node = gui_mgr.root->children->head;
+                    while (node) {
+                        gui_element_t *el = (gui_element_t*)node->data;
+                        if (el->type == GUI_ELEMENT_WINDOW) {
+                             gui_window_t *win = (gui_window_t*)el;
+                             if (win->owner_pid == current_process->pid) {
+                                 found = win;
+                                 break;
+                             }
+                        }
+                        node = node->next;
+                    }
+                 }
+                 
+                 if (found) {
+                     int title_h = 30;
+                     int abs_x = found->base.bounds.x + x;
+                     int abs_y = found->base.bounds.y + title_h + y;
+                     
+                     // Direct draw (Insecure but functional for V1)
+                     extern void graphics_draw_image(int x, int y, int w, int h, const uint32_t* data);
+                     graphics_draw_image(abs_x, abs_y, w, h, img_data);
+                     
+                     gui_invalidate_rect((rect_t){abs_x, abs_y, w, h});
+                     ret = 0;
+                 } else {
+                     ret = -1;
+                 }
+            }
+            break;
+
         default:
             console_write("[SYSCALL] Unknown syscall: ");
             // print hex syscall_nr
