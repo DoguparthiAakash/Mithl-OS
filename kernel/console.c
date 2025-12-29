@@ -1,5 +1,6 @@
 #include "console.h"
 #include <stddef.h>
+#include "ports.h"
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
@@ -34,6 +35,7 @@ void console_set_color(uint8_t fg, uint8_t bg)
 
 void console_putc(char c)
 {
+    serial_putc(c);
     if (c == '\n')
     {
         cursor_x = 0;

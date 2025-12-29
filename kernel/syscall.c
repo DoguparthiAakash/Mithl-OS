@@ -11,6 +11,7 @@
 #include "mm/vmm.h"
 
 extern process_t *current_process;
+#include <semantic.h>
 
 // Syscall Numbers (Linux Compatibility where possible)
 // Syscall Numbers (Linux Compatibility where possible)
@@ -34,6 +35,7 @@ extern process_t *current_process;
 #define SYS_MOUNT     21
 #define SYS_KILL      37
 #define SYS_RENAME    38
+#define SYS_LSEEK     19
 #define SYS_BRK       45
 #define SYS_IOCTL     54
 #define SYS_IOCTL     54
@@ -66,6 +68,7 @@ struct mmap_args {
 #define SYS_MITHL_GUI_CREATE  100
 #define SYS_MITHL_GUI_BUTTON  101
 #define SYS_MITHL_LOG         102
+#define SYS_AGENT_OP          110
 
 void syscall_handler(registers_t *regs) {
     console_write("[DEBUG] SYSCALL ENTERED. AX=");
@@ -247,6 +250,33 @@ void syscall_handler(registers_t *regs) {
                 
                 extern int process_waitpid(int pid, int *status, int options);
                 ret = process_waitpid(pid, status, options);
+            }
+            break;
+
+        case SYS_LSEEK:
+            {
+                int fd = regs->ebx;
+                int offset = regs->ecx;
+                int whence = regs->edx;
+
+                if (current_process && fd >= 0 && fd < 256 && current_process->fd_table[fd]) {
+                    struct file_descriptor *desc = current_process->fd_table[fd];
+                    if (desc->node) {
+                        // whence: 0=SET, 1=CUR, 2=END
+                        if (whence == 0) {
+                            desc->offset = offset;
+                        } else if (whence == 1) {
+                            desc->offset += offset;
+                        } else if (whence == 2) {
+                            desc->offset = desc->node->length + offset;
+                        }
+                        ret = desc->offset;
+                    } else {
+                        ret = -1;
+                    }
+                } else {
+                    ret = -1; // Bad FD
+                }
             }
             break;
 
@@ -609,6 +639,8 @@ void syscall_handler(registers_t *regs) {
              // Already added.
              break; 
 
+ 
+
         case 108: // SYS_MKDIR (path, mode)
             {
                 char *path = (char*)regs->ebx;
@@ -946,7 +978,7 @@ void syscall_handler(registers_t *regs) {
             break;
 
             
-        case 110: // SYS_AGENT_OP (op, arg1, arg2)
+        case SYS_AGENT_OP: // SYS_AGENT_OP (op, arg1, arg2)
             {
                 int op = regs->ebx;
                 void *a1 = (void*)regs->ecx;

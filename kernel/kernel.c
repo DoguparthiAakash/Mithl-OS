@@ -202,23 +202,44 @@ void kmain(uint32_t magic, void* addr)
     
     // Initialize VFS and RamFS
     vfs_init();
-    void ramfs_init_clean(void);
-    ramfs_init_clean();
+    
+    // Register Filesystems
+    void ramfs_register(void);
+    ramfs_register();
+    
+    void fat32_register(void);
+    fat32_register();
+    
+    // Mount Root
+    if (vfs_mount("none", "/", "ramfs") != 0) {
+        serial_write("[CRITICAL] Failed to mount Root FS (RamFS)!\n");
+        console_write("PANIC: Failed to mount Root FS!\n");
+        for(;;) __asm__ volatile("hlt");
+    }
     
     // Load Modules (e.g. Doom WAD)
+    // Note: ramenfs_load_modules usually puts files in /boot or / (root).
+    // Now that root is mounted, we can add files.
+    // ramfs_load_modules iterates and uses ramfs_ensure_dir.
+    // Ensure ramfs_ensure_dir works via VFS or we need to update it?
+    // ramfs.c:ramfs_ensure_dir uses fs_root. fs_root is set by vfs_mount.
+    // So it should work!
     extern void ramfs_load_modules(boot_info_t *info);
     ramfs_load_modules(&boot_info);
-    // Initialize FAT32
+    
+    // Initialize FAT32 Hardware (Controller)
     serial_write("[KERNEL] Initializing FAT32 (Drive 0, LBA 0)...\n");
-    fat32_init(0);
-    fs_node_t *hdd = fat32_mount();
-    if (hdd) {
-        strcpy(hdd->name, "hdd");
-        ramfs_add_child(fs_root, hdd);
+    fat32_init(0); 
+    
+    // Mount HDD
+    if (vfs_mount("disk0", "/hdd", "fat32") == 0) {
         serial_write("[KERNEL] Mounted FAT32 at /hdd\n");
     } else {
-         serial_write("[KERNEL] Failed to mount FAT32\n");
+         serial_write("[KERNEL] Failed to mount FAT32 at /hdd\n");
     }
+    
+    // fs_init(); // Old dumb filesystem 
+
     
     // fs_init(); // Old dumb filesystem 
     
@@ -229,7 +250,8 @@ void kmain(uint32_t magic, void* addr)
     // Show Boot Logo
     console_write("[INFO] Drawing Boot Logo...\n");
     draw_boot_logo();
-    for (volatile int i = 0; i < 300000000; i++); // Moderate delay ~2-4s on QEMU
+    // for (volatile int i = 0; i < 300000000; i++); // Moderate delay ~2-4s on QEMU
+
     // console_write("[INFO] Boot Logo Skipped (Debug Mode).\n");
 
     // Initialize Semantic System
@@ -251,6 +273,7 @@ void kmain(uint32_t magic, void* addr)
     
     // Fade in from Black to the Desktop we just drew
     graphics_fade_in();
+
     
     console_log("[INFO] Draw Complete. Entering Loop.\n");
     
@@ -266,11 +289,14 @@ void kmain(uint32_t magic, void* addr)
     
     // Launch Userspace Hello App (The "Daily Driver" test)
     // Assumes ramfs loaded it at /hello.elf
-    // process_create_elf("Hello", "/hello.elf");
+    // process_create_elf("Hello", "/hello.elf", "");
     // process_create_elf("Calculator", "/calculator.elf");
     // process_create_elf("ls", "/ls.elf");
     // process_create_elf("ps", "/ps.elf", "");
-    process_create_elf("Shell", "/shell.elf", "");
+    // process_create_elf("Shell", "/shell.elf", "");
+    // process_create_elf("TCC", "/hdd/bin/tcc", "-run -I/hdd/usr/include /hdd/hello.c");
+
+
     
     // Enable Interrupts (PIT will drive preemption)
     asm volatile("sti");
@@ -341,6 +367,9 @@ void kmain(uint32_t magic, void* addr)
         // 7. Update State
         prev_x = cur_x;
         prev_y = cur_y;
+
+        extern void switch_task(void);
+        switch_task();
     }
 }
 

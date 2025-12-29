@@ -79,19 +79,41 @@ void fat32_init(uint32_t partition_lba) {
     serial_write("\n");
 }
 
-fs_node_t *fat32_mount(void) {
+// VFS 2.0 Mount Callback
+fs_node_t *fat32_mount_fs(const char *source, const char *target) {
+    (void)target;
+    // Parse source for partition LBA or device?
+    // For now, hardcode partition 0 if source is "disk" or similar
+    // fat32_init(0); // Assuming already initialized or init here?
+    // Actually, mount usually initializes per instance.
+    // We'll init strict LBA 0 for now.
+    
+    // fat32_init(0); // If we call this, we re-read BPB.
+    // It's safe.
+    // But `fat32_init` is void.
+    
+    // Existing fat32_mount returns the node.
     fs_node_t *root = (fs_node_t*)memory_alloc(sizeof(fs_node_t));
     strcpy(root->name, "fat_root");
     root->flags = FS_DIRECTORY;
     root->inode = fat_fs.root_cluster; // Use Cluster as Inode
     root->readdir = fat32_readdir;
     root->finddir = fat32_finddir;
-    root->read = 0; // Directory cannot be read as byte stream in this VFS design usually
+    root->read = 0; 
     root->write = 0;
     root->open = 0;
     root->close = 0;
     return root;
 }
+
+// Wrapper to match signature (fat32_mount was name, let's keep it or rename?)
+// fat32.h says fs_node_t *fat32_mount(void);
+// We will change header later or just add wrapper.
+
+void fat32_register(void) {
+    vfs_register_driver("fat32", fat32_mount_fs);
+}
+
 
 // READ DIRECTORY
 struct dirent *fat32_readdir(fs_node_t *node, uint32_t index) {

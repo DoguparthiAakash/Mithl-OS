@@ -84,4 +84,26 @@ int vfs_move(const char *src_path, const char *dest_path);  // Move file/folder
 // RamFS helper (should be in ramfs.h but exposed here for kernel.c)
 void ramfs_add_child(fs_node_t *dir, fs_node_t *child);
 
+// === VFS 2.0 Advanced Features ===
+
+typedef struct mount_point {
+    char path[256];       // Mount path (e.g., "/mnt")
+    fs_node_t *root;      // Root node of the mounted filesystem
+    struct mount_point *next;
+} mount_point_t;
+
+typedef fs_node_t* (*mount_callback)(const char *source, const char *target);
+
+typedef struct fs_driver {
+    char name[32];        // Filesystem name (e.g., "fat32", "ramfs")
+    mount_callback mount; // Mount function
+    struct fs_driver *next;
+} fs_driver_t;
+
+// API
+void vfs_register_driver(const char *name, mount_callback mount);
+int vfs_mount(const char *source, const char *target, const char *fs_type);
+void vfs_list_mounts(void);
+
+
 #endif

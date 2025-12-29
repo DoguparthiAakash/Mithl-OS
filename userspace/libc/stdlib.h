@@ -2,12 +2,37 @@
 #define STDLIB_H
 
 #include "stdint.h"
+#include <stddef.h>
+
 
 // Basic Types (Removed, using stdint.h)
 
 // Process
 void exit(int status);
 void print(const char *msg);
+
+extern char **environ;
+
+// Memory
+void *malloc(size_t size);
+void free(void *ptr);
+void *calloc(size_t nmemb, size_t size);
+void *realloc(void *ptr, size_t size);
+int system(const char *command);
+char *getenv(const char *name);
+int atoi(const char *nptr);
+char *realpath(const char *path, char *resolved_path);
+char *getcwd(char *buf, size_t size);
+float strtof(const char *nptr, char **endptr);
+
+// Conversions
+long strtol(const char *nptr, char **endptr, int base);
+unsigned long strtoul(const char *nptr, char **endptr, int base);
+long long strtoll(const char *nptr, char **endptr, int base);
+unsigned long long strtoull(const char *nptr, char **endptr, int base);
+
+// Alg
+void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *));
 
 // Helpers
 int get_cmdline(char *buf, int max_len);
@@ -50,7 +75,6 @@ int waitpid(int pid, int *status, int options);
 char getchar();
 
 // File Operations
-int open(const char *path, int flags);
 int close(int fd);
 int read(int fd, void *buf, uint32_t count);
 int write(int fd, const void *buf, uint32_t count);

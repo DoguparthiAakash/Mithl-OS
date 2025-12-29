@@ -1,0 +1,284 @@
+gcc -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Wall -Wextra -mno-sse -mno-sse2 -mno-mmx -mno-80387 -I./kernel/include -I./kernel -I./kernel/include/libc_shim -I./games/DOOM-master/linuxdoom-1.10 -DDOOM_MITHL -DNORMALUNIX=1 -DLINUX=1 -c kernel/kernel.c -o kernel/kernel.o
+kernel/kernel.c: In function ‘kmain’:
+kernel/kernel.c:307:13: warning: variable ‘mouse_moved’ set but not used [-Wunused-but-set-variable]
+  307 |         int mouse_moved = 0;
+      |             ^~~~~~~~~~~
+kernel/kernel.c:284:16: warning: unused variable ‘handled_click’ [-Wunused-variable]
+  284 |     static int handled_click = 0;
+      |                ^~~~~~~~~~~~~
+gcc -m32 -nostdlib -no-pie -Wl,-T,linker/linker.ld -o kernel.elf boot/boot.o kernel/interrupts.o kernel/gdt_flush.o kernel/power.o kernel/arch/i386/process.o kernel/hal/x86_64/cpu_control.o kernel/kernel.o kernel/gdt.o kernel/idt.o kernel/graphics.o kernel/gui.o kernel/gui_dialog.o kernel/filesystem.o kernel/keyboard.o kernel/mouse.o kernel/ata.o kernel/memory.o kernel/string.o kernel/event.o kernel/input.o kernel/ports.o kernel/pit.o kernel/console.o kernel/rtc.o kernel/acpi.o kernel/vga.o kernel/list.o kernel/syscall.o desktop_env/compositor.o kernel/apps/terminal/terminal.o kernel/apps/terminal/commands.o kernel/apps.o kernel/apps/text_editor/text_editor.o kernel/apps/file_manager/file_manager.o kernel/fs/fat32/fat32.o kernel/vfs.o kernel/ramfs.o kernel/hal_test.o kernel/process.o windowmanager/mithl_wm.o kernel/mm/pmm.o kernel/mm/vmm.o kernel/mm/zram.o kernel/elf_loader.o kernel/apps/settings/settings.o kernel/graphics/triangle.o kernel/gpu/gpu.o kernel/boot_adapter.o kernel/theme.o kernel/apps/doom/i_mithl.o kernel/apps/doom/libc_doom.o kernel/pipe.o kernel/semantic/semantic.o games/DOOM-master/linuxdoom-1.10/am_map.o games/DOOM-master/linuxdoom-1.10/d_items.o games/DOOM-master/linuxdoom-1.10/d_main.o games/DOOM-master/linuxdoom-1.10/d_net.o games/DOOM-master/linuxdoom-1.10/doomdef.o games/DOOM-master/linuxdoom-1.10/doomstat.o games/DOOM-master/linuxdoom-1.10/dstrings.o games/DOOM-master/linuxdoom-1.10/f_finale.o games/DOOM-master/linuxdoom-1.10/f_wipe.o games/DOOM-master/linuxdoom-1.10/g_game.o games/DOOM-master/linuxdoom-1.10/hu_lib.o games/DOOM-master/linuxdoom-1.10/hu_stuff.o games/DOOM-master/linuxdoom-1.10/info.o games/DOOM-master/linuxdoom-1.10/m_argv.o games/DOOM-master/linuxdoom-1.10/m_bbox.o games/DOOM-master/linuxdoom-1.10/m_cheat.o games/DOOM-master/linuxdoom-1.10/m_fixed.o games/DOOM-master/linuxdoom-1.10/m_menu.o games/DOOM-master/linuxdoom-1.10/m_misc.o games/DOOM-master/linuxdoom-1.10/m_random.o games/DOOM-master/linuxdoom-1.10/m_swap.o games/DOOM-master/linuxdoom-1.10/p_ceilng.o games/DOOM-master/linuxdoom-1.10/p_doors.o games/DOOM-master/linuxdoom-1.10/p_enemy.o games/DOOM-master/linuxdoom-1.10/p_floor.o games/DOOM-master/linuxdoom-1.10/p_inter.o games/DOOM-master/linuxdoom-1.10/p_lights.o games/DOOM-master/linuxdoom-1.10/p_map.o games/DOOM-master/linuxdoom-1.10/p_maputl.o games/DOOM-master/linuxdoom-1.10/p_mobj.o games/DOOM-master/linuxdoom-1.10/p_plats.o games/DOOM-master/linuxdoom-1.10/p_pspr.o games/DOOM-master/linuxdoom-1.10/p_saveg.o games/DOOM-master/linuxdoom-1.10/p_setup.o games/DOOM-master/linuxdoom-1.10/p_sight.o games/DOOM-master/linuxdoom-1.10/p_spec.o games/DOOM-master/linuxdoom-1.10/p_switch.o games/DOOM-master/linuxdoom-1.10/p_telept.o games/DOOM-master/linuxdoom-1.10/p_tick.o games/DOOM-master/linuxdoom-1.10/p_user.o games/DOOM-master/linuxdoom-1.10/r_bsp.o games/DOOM-master/linuxdoom-1.10/r_data.o games/DOOM-master/linuxdoom-1.10/r_draw.o games/DOOM-master/linuxdoom-1.10/r_main.o games/DOOM-master/linuxdoom-1.10/r_plane.o games/DOOM-master/linuxdoom-1.10/r_segs.o games/DOOM-master/linuxdoom-1.10/r_sky.o games/DOOM-master/linuxdoom-1.10/r_things.o games/DOOM-master/linuxdoom-1.10/s_sound.o games/DOOM-master/linuxdoom-1.10/sounds.o games/DOOM-master/linuxdoom-1.10/st_lib.o games/DOOM-master/linuxdoom-1.10/st_stuff.o games/DOOM-master/linuxdoom-1.10/tables.o games/DOOM-master/linuxdoom-1.10/v_video.o games/DOOM-master/linuxdoom-1.10/w_wad.o games/DOOM-master/linuxdoom-1.10/wi_stuff.o games/DOOM-master/linuxdoom-1.10/z_zone.o kernel/lib/cxx_runtime.o kernel/rust/target/i686-unknown-linux-gnu/release/libmithl_rust.a
+rm -rf bootiso
+mkdir -p bootiso/boot/grub
+cp kernel.elf bootiso/boot/
+# GRUB config for BIOS
+echo 'set timeout=5' > bootiso/boot/grub/grub.cfg
+echo 'set default=0' >> bootiso/boot/grub/grub.cfg
+echo '' >> bootiso/boot/grub/grub.cfg
+echo 'insmod all_video' >> bootiso/boot/grub/grub.cfg
+echo 'set gfxpayload=keep' >> bootiso/boot/grub/grub.cfg
+echo '' >> bootiso/boot/grub/grub.cfg
+echo 'menuentry "Mithl OS" {' >> bootiso/boot/grub/grub.cfg
+echo '  multiboot2 /boot/kernel.elf' >> bootiso/boot/grub/grub.cfg
+# Add Modules
+if [ -f DOOM1.WAD ]; then \
+  cp DOOM1.WAD bootiso/boot/; \
+  echo '  module2 /boot/DOOM1.WAD DOOM1.WAD' >> bootiso/boot/grub/grub.cfg; \
+fi
+# Add Hello App
+if [ -f userspace/apps/hello/hello.elf ]; then \
+  cp userspace/apps/hello/hello.elf bootiso/boot/; \
+  echo '  module2 /boot/hello.elf hello.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+# Add Calculator App
+if [ -f userspace/apps/calculator/calc.elf ]; then \
+  cp userspace/apps/calculator/calc.elf bootiso/boot/; \
+  echo '  module2 /boot/calc.elf calc.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+# Add LS App
+if [ -f userspace/apps/ls/ls.elf ]; then \
+  cp userspace/apps/ls/ls.elf bootiso/boot/; \
+  echo '  module2 /boot/ls.elf ls.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+# Add PS App
+if [ -f userspace/apps/ps/ps.elf ]; then \
+  cp userspace/apps/ps/ps.elf bootiso/boot/; \
+  echo '  module2 /boot/ps.elf ps.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+# Add CAT App
+if [ -f userspace/apps/cat/cat.elf ]; then \
+  cp userspace/apps/cat/cat.elf bootiso/boot/; \
+  echo '  module2 /boot/cat.elf cat.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+# Add MKDIR App
+if [ -f userspace/apps/mkdir/mkdir.elf ]; then \
+  cp userspace/apps/mkdir/mkdir.elf bootiso/boot/; \
+  echo '  module2 /boot/mkdir.elf mkdir.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+# Add CP App
+if [ -f userspace/apps/cp/cp.elf ]; then \
+  cp userspace/apps/cp/cp.elf bootiso/boot/; \
+  echo '  module2 /boot/cp.elf cp.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+# Add MV App
+if [ -f userspace/apps/mv/mv.elf ]; then \
+  cp userspace/apps/mv/mv.elf bootiso/boot/; \
+  echo '  module2 /boot/mv.elf mv.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+# Add CC App
+if [ -f userspace/apps/cc/cc.elf ]; then \
+  cp userspace/apps/cc/cc.elf bootiso/boot/; \
+  echo '  module2 /boot/cc.elf cc.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+if [ -f userspace/apps/cc/test.c ]; then \
+  cp userspace/apps/cc/test.c bootiso/boot/; \
+  echo '  module2 /boot/test.c test.c' >> bootiso/boot/grub/grub.cfg; \
+fi
+if [ -f userspace/apps/notepad/notepad.elf ]; then \
+  cp userspace/apps/notepad/notepad.elf bootiso/boot/; \
+  echo '  module2 /boot/notepad.elf notepad.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+if [ -f userspace/apps/notepad/notepad.c ]; then \
+  cp userspace/apps/notepad/notepad.c bootiso/boot/; \
+  echo '  module2 /boot/notepad.c notepad.c' >> bootiso/boot/grub/grub.cfg; \
+fi
+if [ -f userspace/apps/ccl/ccl.elf ]; then \
+  cp userspace/apps/ccl/ccl.elf bootiso/boot/; \
+  echo '  module2 /boot/ccl.elf ccl.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+if [ -f userspace/apps/filemgr/filemgr.elf ]; then \
+  cp userspace/apps/filemgr/filemgr.elf bootiso/boot/; \
+  echo '  module2 /boot/filemgr.elf filemgr.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+if [ -f userspace/apps/shell/shell.elf ]; then \
+  cp userspace/apps/shell/shell.elf bootiso/boot/; \
+  echo '  module2 /boot/shell.elf shell.elf' >> bootiso/boot/grub/grub.cfg; \
+fi
+# Mock Linker
+if [ -f userspace/apps/linker/linker.elf ]; then \
+  cp userspace/apps/linker/linker.elf bootiso/boot/; \
+  echo '  module2 /boot/linker.elf /lib/ld-linux.so.2' >> bootiso/boot/grub/grub.cfg; \
+fi
+if [ -f userspace/apps/linux_test/hello_linux ]; then \
+  cp userspace/apps/linux_test/hello_linux bootiso/boot/; \
+  echo '  module2 /boot/hello_linux hello_linux' >> bootiso/boot/grub/grub.cfg; \
+fi
+echo '  boot' >> bootiso/boot/grub/grub.cfg
+echo '}' >> bootiso/boot/grub/grub.cfg
+# --- TCC Deployment ---
+# We append a separate menu entry or just add to the main one? 
+# Adding to main one is easiest but might hit module limits of GRUB legacy (though Multiboot2 is better).
+# Let's add to the SAME entry by using a temp file handling logic or just SED inserted before 'boot'.
+# Complex Logic: We need to insert BEFORE the 'boot' line we just added.
+# Actually, let's rewrite the "Create ISO" block to be cleaner or just use a helper script.
+# For now, I will modify the above block in-place (this ReplaceFileContent replaces the end of the block).
+# Remove the 'boot' and '}' I just added in previous logic (if I replace the block that adds them).
+# The previous block ended with:
+#   echo '  module2 /boot/hello_linux hello_linux' >> bootiso/boot/grub/grub.cfg; \
+# fi
+# echo '  boot' ...
+# I will replace from the hello_linux block to the end.
+if [ -f userspace/apps/linux_test/hello_linux ]; then \
+  cp userspace/apps/linux_test/hello_linux bootiso/boot/; \
+  echo '  module2 /boot/hello_linux /bin/hello_linux' >> bootiso/boot/grub/grub.cfg; \
+fi
+# TCC
+if [ -f tcc_build/tcc ]; then \
+  cp tcc_build/tcc bootiso/boot/; \
+  echo '  module2 /boot/tcc /bin/tcc' >> bootiso/boot/grub/grub.cfg; \
+fi
+# LibTCC1
+if [ -f tcc_build/lib/libtcc1.a ]; then \
+  cp tcc_build/lib/libtcc1.a bootiso/boot/; \
+  echo '  module2 /boot/libtcc1.a /usr/lib/libtcc1.a' >> bootiso/boot/grub/grub.cfg; \
+fi
+# TCC Includes
+# Copy all .h from tcc_build/include
+for f in tcc_build/include/*.h; do \
+	if [ -f "$f" ]; then \
+		cp "$f" bootiso/boot/; \
+		BASE=$(basename $f); \
+		echo "  module2 /boot/$BASE /usr/lib/tcc/include/$BASE" >> bootiso/boot/grub/grub.cfg; \
+	fi; \
+done
+# Libc Includes
+for f in userspace/libc/*.h; do \
+	if [ -f "$f" ]; then \
+		cp "$f" bootiso/boot/; \
+		BASE=$(basename $f); \
+		echo "  module2 /boot/$BASE /usr/include/$BASE" >> bootiso/boot/grub/grub.cfg; \
+	fi; \
+done
+echo '  boot' >> bootiso/boot/grub/grub.cfg
+echo '}' >> bootiso/boot/grub/grub.cfg
+# Create ISO
+grub-mkrescue -o Mithl.iso bootiso
+xorriso 1.5.6 : RockRidge filesystem manipulator, libburnia project.
+
+Drive current: -outdev 'stdio:Mithl.iso'
+Media current: stdio file, overwriteable
+Media status : is blank
+Media summary: 0 sessions, 0 data blocks, 0 data, 46.6g free
+Added to ISO image: directory '/'='/tmp/grub.Y5hrI4'
+xorriso : UPDATE :     628 files added in 1 seconds
+Added to ISO image: directory '/'='/home/aakash/Downloads/Mithl-OS/bootiso'
+xorriso : UPDATE :     673 files added in 1 seconds
+xorriso : NOTE : Copying to System Area: 512 bytes from file '/usr/lib/grub/i386-pc/boot_hybrid.img'
+xorriso : UPDATE : Thank you for being patient. Working since 0 seconds.
+ISO image produced: 11428 sectors
+Written to medium : 11428 sectors at LBA 0
+Writing to 'stdio:Mithl.iso' completed successfully.
+
+ISO created: Mithl.iso (BIOS boot only)
+Note: UEFI support requires kernel changes to support Multiboot2 protocol
+qemu-system-x86_64 -cdrom Mithl.iso -serial stdio
+
+
+=== MITHL OS KERNEL BOOT ===
+[INFO] Serial Port Initialized.
+[INFO] GDT Initialized.
+[INFO] SSE Initialized.
+[INFO] PIC Disabled.
+[INFO] Constructors Called.
+[INFO] IDT Initialized.
+[MB2] Parsing Tags...
+[MB2] Tag Type: 00000015
+[MB2] Tag Type: 00000001
+[MB2] Tag Type: 00000002
+[MB2] Tag Type: 0000000A
+[MB2] Tag Type: 00000003
+[MB2] Found Module: DOOM1.WAD
+[MB2] Tag Type: 00000003
+[MB2] Found Module: hello.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: ls.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: ps.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: cat.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: mkdir.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: cp.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: mv.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: cc.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: test.c
+[MB2] Tag Type: 00000003
+[MB2] Found Module: notepad.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: notepad.c
+[MB2] Tag Type: 00000003
+[MB2] Found Module: ccl.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: filemgr.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: shell.elf
+[MB2] Tag Type: 00000003
+[MB2] Found Module: /lib/ld-linux.so.2
+[MB2] Tag Type: 00000003
+[MB2] Found Module: hello_linux
+[MB2] Tag Type: 00000006
+[MB2] Tag Type: 00000009
+[MB2] Tag Type: 00000004
+[MB2] Tag Type: 00000005
+[MB2] Tag Type: 00000007
+[MB2] Tag Type: 00000008
+[MB2] Tag Type: 0000000E
+[INFO] ACPI RSDP set from Multiboot.
+[INFO] ACPI RSDP set from Multiboot.
+[INFO] PMM Initialized.
+[INFO] PMM Initialized.
+[VMM] Allocating Page Directory...
+[VMM] Identity Mapping First 128MB...
+[VMM] Mapping Framebuffer at: 0xFD000000
+[VMM] Loading CR3...
+[VMM] Enabling Paging (CR0)...
+[INFO] VMM Initialized (Paging Enabled).
+[INFO] VMM Initialized (Paging Enabled).
+[MEM] Paged Heap Initialized at 0x40000000
+[INFO] Memory Initialized.
+[INFO] Memory Initialized.
+[zRAM] Initialized. Using RLE compression.
+[INFO] zRAM Initialized.
+[INFO] zRAM Initialized.
+[INFO] Rust Initialized.
+[INFO] Rust Initialized.
+[INFO] Multiboot Graphics Available. Initializing VESA...
+[INFO] Multiboot Graphics Available. Initializing VESA...
+[INFO] VESA Graphics Initialized.
+[INFO] VESA Graphics Initialized.
+[GPU] Detecting graphics hardware...
+[GPU] Detecting graphics hardware...
+[GPU] Detected: Bochs/QEMU VGA
+[GPU] Detected: Bochs/QEMU VGA
+[GPU] Hardware acceleration: ENABLED
+[GPU] Hardware acceleration: ENABLED
+[GPU] Bochs VGA ready for hardware acceleration
+[GPU] Bochs VGA ready for hardware acceleration
+[RAMFS] Loading Modules...
+  Loaded: DOOM1.WAD
+  Loaded: hello.elf
+  Loaded: ls.elf
+  Loaded: ps.elf
+  Loaded: cat.elf
+  Loaded: mkdir.elf
+  Loaded: cp.elf
+  Loaded: mv.elf
+  Loaded: cc.elf
+  Loaded: test.c
+  Loaded: notepad.elf
+  Loaded: notepad.c
+  Loaded: ccl.elf
+  Loaded: filemgr.elf
+  Loaded: shell.elf
+  Loaded: /lib/ld-linux.so.2
+  Loaded: hello_linux
+[KERNEL] Initializing FAT32 (Drive 0, LBA 0)...
+[FAT32] Initialized.
+  Sec/Clust: 
+[KERNEL] Mounted FAT32 at /hdd
+[INFO] PIT Initialized.
+[INFO] Drawing Boot Logo...
+qemu: terminating on signal 15 from pid 92058 (timeout)

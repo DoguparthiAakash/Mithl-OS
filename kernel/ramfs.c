@@ -216,11 +216,16 @@ void ramfs_vfs_mkdir(fs_node_t *parent, char *name, uint16_t permission) {
 
 // -- Init --
 
-// Initialise Standard Unix Paths for Debian Compatibility
-void ramfs_init(void) {
-    fs_root = ramfs_create_dir("/");
+// -- Init --
+
+// VFS 2.0 Mount Callback
+fs_node_t *ramfs_mount(const char *source, const char *target) {
+    (void)source; (void)target;
+    // Create new root for this mount instance
+    fs_node_t *root = ramfs_create_dir("/");
     
-    // 1. Core Directories
+    // 1. Core Directories (Only if mounting as Root / ?)
+    // For now, assume RamFS is always populated with structure
     fs_node_t *bin = ramfs_create_dir("bin");
     fs_node_t *usr = ramfs_create_dir("usr");
     fs_node_t *dev = ramfs_create_dir("dev");
@@ -229,13 +234,13 @@ void ramfs_init(void) {
     fs_node_t *tmp = ramfs_create_dir("tmp");
     fs_node_t *home = ramfs_create_dir("home");
     
-    ramfs_add_child(fs_root, bin);
-    ramfs_add_child(fs_root, usr);
-    ramfs_add_child(fs_root, dev);
-    ramfs_add_child(fs_root, etc);
-    ramfs_add_child(fs_root, lib);
-    ramfs_add_child(fs_root, tmp);
-    ramfs_add_child(fs_root, home);
+    ramfs_add_child(root, bin);
+    ramfs_add_child(root, usr);
+    ramfs_add_child(root, dev);
+    ramfs_add_child(root, etc);
+    ramfs_add_child(root, lib);
+    ramfs_add_child(root, tmp);
+    ramfs_add_child(root, home);
     
     // 2. /usr subdirectories
     ramfs_add_child(usr, ramfs_create_dir("bin"));
@@ -259,13 +264,20 @@ void ramfs_init(void) {
     
     // 5. Welcome File
     ramfs_add_child(aakash, ramfs_create_file("welcome.txt", "Welcome to Mithl OS! Linux binary compatibility layer active.\n"));
+    
+    return root;
 }
 
-// Legacy function removed/merged
-void ramfs_init_clean(void) {
-    // Redirect
-    ramfs_init();
+// Register RamFS
+void ramfs_register(void) {
+    vfs_register_driver("ramfs", ramfs_mount);
 }
+
+// Legacy function kept for kernel build compat until updated
+void ramfs_init_clean(void) {
+    ramfs_register();
+}
+
 #include "boot_info.h"
 
 // Helper to ensure parent directories exist

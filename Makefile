@@ -166,65 +166,68 @@ $(RUST_LIB):
 run: iso
 	qemu-system-x86_64 -cdrom Mithl.iso -serial stdio
 
+GCC_INC = $(shell $(CC) -m32 -print-file-name=include)
+
 # Userspace Libc
-LIBC_SOURCES = userspace/libc/stdlib.c
-LIBC_ASM = userspace/libc/syscall.asm userspace/libc/crt0.asm
-LIBC_OBJS = $(LIBC_SOURCES:.c=.o) $(LIBC_ASM:.asm=.o)
+LIBC_SOURCES = userspace/libc/stdlib.c userspace/libc/string.c userspace/libc/malloc.c userspace/libc/stdio.c
+LIBC_ASM_SRC = userspace/libc/syscall.asm
+LIBC_OBJS = $(LIBC_SOURCES:.c=.o) $(LIBC_ASM_SRC:.asm=.o)
+CRT0_OBJ = userspace/libc/crt0.o
 
 userspace/libc/%.o: userspace/libc/%.c
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -c $< -o $@
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -I$(GCC_INC) -Iuserspace/libc -c $< -o $@
 
 userspace/libc/%.o: userspace/libc/%.asm
 	$(ASM) -f elf32 $< -o $@
 
 # Userspace Apps
-userspace/apps/hello/hello.elf: userspace/apps/hello/hello.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/hello/hello.elf: userspace/apps/hello/hello.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -I$(GCC_INC) -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/calculator/calc.elf: userspace/apps/calculator/main.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/calculator/calc.elf: userspace/apps/calculator/main.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/ls/ls.elf: userspace/apps/ls/ls.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/ls/ls.elf: userspace/apps/ls/ls.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/ps/ps.elf: userspace/apps/ps/ps.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/ps/ps.elf: userspace/apps/ps/ps.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/cat/cat.elf: userspace/apps/cat/cat.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/cat/cat.elf: userspace/apps/cat/cat.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/mkdir/mkdir.elf: userspace/apps/mkdir/mkdir.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/mkdir/mkdir.elf: userspace/apps/mkdir/mkdir.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/cp/cp.elf: userspace/apps/cp/cp.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/cp/cp.elf: userspace/apps/cp/cp.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/mv/mv.elf: userspace/apps/mv/mv.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/mv/mv.elf: userspace/apps/mv/mv.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/cc/cc.elf: userspace/apps/cc/cc.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/cc/cc.elf: userspace/apps/cc/cc.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/notepad/notepad.elf: userspace/apps/notepad/notepad.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/notepad/notepad.elf: userspace/apps/notepad/notepad.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/fork_test/fork_test.elf: userspace/apps/fork_test/fork_test.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/fork_test/fork_test.elf: userspace/apps/fork_test/fork_test.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/ccl/ccl.elf: userspace/apps/ccl/ccl.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/ccl/ccl.elf: userspace/apps/ccl/ccl.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/filemgr/filemgr.elf: userspace/apps/filemgr/main.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -static -nostdlib -nostdinc -Iuserspace/libc -Iuserspace/apps/filemgr/icons -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/filemgr/filemgr.elf: userspace/apps/filemgr/main.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -static -nostdlib -nostdinc -Iuserspace/libc -Iuserspace/apps/filemgr/icons -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/shell/shell.elf: userspace/apps/shell/shell.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -static -nostdlib -nostdinc -Iuserspace/libc -o $@ userspace/libc/crt0.o $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/shell/shell.elf: userspace/apps/shell/shell.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -static -nostdlib -nostdinc -I$(GCC_INC) -Iuserspace/libc -o $@ $(CRT0_OBJ) $< $(LIBC_OBJS)
 
-userspace/apps/linker/linker.elf: userspace/apps/linker/linker.c $(LIBC_OBJS)
-	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -Wl,-Ttext=0x40000000 -o $@ $< userspace/libc/stdlib.o userspace/libc/syscall.o
+userspace/apps/linker/linker.elf: userspace/apps/linker/linker.c $(LIBC_OBJS) $(CRT0_OBJ)
+	$(CC) -m32 -ffreestanding -fno-pie -nostdlib -nostdinc -Iuserspace/libc -Wl,-Ttext=0x40000000 -o $@ $< $(LIBC_OBJS)
 
 # Create bootable ISO (BIOS only for now)
-iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/calculator/calc.elf userspace/apps/ls/ls.elf userspace/apps/ps/ps.elf userspace/apps/cat/cat.elf userspace/apps/mkdir/mkdir.elf userspace/apps/cp/cp.elf userspace/apps/mv/mv.elf userspace/apps/cc/cc.elf userspace/apps/notepad/notepad.elf userspace/apps/fork_test/fork_test.elf userspace/apps/ccl/ccl.elf userspace/apps/filemgr/filemgr.elf userspace/apps/shell/shell.elf userspace/apps/linker/linker.elf
+iso: kernel.elf userspace/apps/hello/hello.elf userspace/apps/shell/shell.elf
 	rm -rf bootiso
 	mkdir -p bootiso/boot/grub
 	cp kernel.elf bootiso/boot/

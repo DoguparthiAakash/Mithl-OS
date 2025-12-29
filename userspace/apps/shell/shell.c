@@ -1,54 +1,10 @@
 #include "stdlib.h"
-// #include <string.h> // We don't have userspace string.h yet?
-// We need to check if we have string.h in userspace/libc.
-// I'll assume we don't or it's incomplete. I'll implement helpers.
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
 
-int strlen(const char *s) {
-    int len = 0;
-    while(s[len]) len++;
-    return len;
-}
+// Minimal printf (only supports %s and %c for now, and int)
 
-int strcmp(const char *s1, const char *s2) {
-    while (*s1 && (*s1 == *s2)) { s1++; s2++; }
-    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
-}
-
-void strcpy(char *dest, const char *src) {
-    while((*dest++ = *src++));
-}
-
-void strcat(char *dest, const char *src) {
-    while(*dest) dest++;
-    while((*dest++ = *src++));
-}
-
-void memset(void *dest, int val, int len) {
-    unsigned char *ptr = (unsigned char*)dest;
-    while(len-- > 0) *ptr++ = val;
-}
-
-char *strtok(char *s, const char *delim) {
-    static char *old_s;
-    if (s == 0) s = old_s;
-    if (s == 0) return 0;
-    
-    // Skip leading delims
-    while(*s && *delim == *s) s++; // Single char delim assumption for simplicity
-    if (*s == 0) { old_s = 0; return 0; }
-    
-    char *ret = s;
-    while(*s) {
-        if (*s == *delim) {
-            *s = 0;
-            old_s = s+1;
-            return ret;
-        }
-        s++;
-    }
-    old_s = 0;
-    return ret;
-}
 
 // Minimal printf (only supports %s and %c for now, and int)
 void printf_shim(const char *format, ...) {

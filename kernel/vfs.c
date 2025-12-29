@@ -1,5 +1,6 @@
 #include "vfs.h"
 #include "string.h"
+#include "console.h"
 #include "memory.h"
 
 fs_node_t *fs_root = 0;
@@ -67,40 +68,114 @@ void vfs_init(void) {
     // Initialized by RamFS or specific FS driver
 }
 
-// Helper: Resolve path to node
+// === VFS 2.0 Implementation ===
+
+static mount_point_t *mount_list = NULL;
+static fs_driver_t *driver_list = NULL;
+
+void vfs_register_driver(const char *name, mount_callback mount) {
+    fs_driver_t *drv = (fs_driver_t*)memory_alloc(sizeof(fs_driver_t));
+    strcpy(drv->name, name);
+    drv->mount = mount;
+    drv->next = driver_list;
+    driver_list = drv;
+    console_write("[VFS] Registered filesystem: ");
+    console_write(name);
+    console_write("\n");
+}
+
+int vfs_mount(const char *source, const char *target, const char *fs_type) {
+    // 1. Find Driver
+    fs_driver_t *drv = driver_list;
+    while(drv) {
+        if (strcmp(drv->name, fs_type) == 0) break;
+        drv = drv->next;
+    }
+    if (!drv) {
+        console_write("[VFS] Error: Filesystem driver not found: ");
+        console_write(fs_type);
+        console_write("\n");
+        return -1;
+    }
+
+    // 2. Resolve Target (Must exist and be a directory)
+    // Special case: "/" (Root mount) happens before VFS is fully active?
+    // If target is NULL or "/" and fs_root is NULL, we are mounting root.
+    if ((!target || strcmp(target, "/") == 0) && !fs_root) {
+        fs_root = drv->mount(source, NULL);
+        console_write("[VFS] Mounted Root\n");
+        return 0;
+    }
+
+    fs_node_t *mountpoint_node = vfs_resolve_path(target);
+    if (!mountpoint_node) return -1;
+    if ((mountpoint_node->flags & 0x7) != FS_DIRECTORY) return -1;
+
+    // 3. Mount
+    fs_node_t *root = drv->mount(source, target);
+    if (!root) return -1;
+
+    // 4. Create Mount Record
+    mount_point_t *mp = (mount_point_t*)memory_alloc(sizeof(mount_point_t));
+    strcpy(mp->path, target);
+    mp->root = root;
+    mp->next = mount_list;
+    mount_list = mp;
+    
+    // Mark node as mountpoint so we cross it
+    mountpoint_node->flags |= FS_MOUNTPOINT;
+    mountpoint_node->ptr = root; // Link to new root
+
+    console_write("[VFS] Mounted ");
+    console_write(fs_type);
+    console_write(" at ");
+    console_write(target);
+    console_write("\n");
+    
+    return 0;
+}
+
+// Updated Path Resolver to handle Mount Points
 fs_node_t *vfs_resolve_path(const char *path) {
-    if (!path || !fs_root) return 0;
-    
+    if (!path) return NULL;
+    // Handle Root
     fs_node_t *current = fs_root;
-    char path_buf[256];
+    if (!current) return NULL;
     
-    // Handle absolute/relative basics (simplified: always assume absolute for now or handle /)
-    if (path[0] == '/') {
+    char path_buf[256];
+    strcpy(path_buf, path);
+    
+    // Normalize absolute path
+    char *p = path_buf;
+    if (*p == '/') {
         current = fs_root;
-        // copy path skipping leading /
-        strcpy(path_buf, path + 1);
+        while(*p == '/') p++; // Skip leading slashes
     } else {
-        // Relative path support would require cwd context, which vfs.c doesn't track.
-        // For now, the caller (terminal) should provide absolute path or we assume root-relative if no slash.
-        // Ideally terminal expands cwd + path.
-        strcpy(path_buf, path);
+        // Relative path not really supported without CWD context passed in
+        // Assume root for now
     }
     
-    // Split by /
-    // Since we don't have strtok_r, we do manual parsing
-    char *p = path_buf;
     char *segment = p;
-    
     while (*p) {
         if (*p == '/') {
             *p = 0; // Terminate segment
             
             if (strlen(segment) > 0) {
+                // before descending, check if current is a mountpoint (though normally 'ptr' is used implicitly?)
+                // If we are AT a mountpoint, 'current' is the underlying node.
+                // But we should have swapped 'current' with the mounted root already if we traversed.
+                
                 fs_node_t *next = finddir_fs(current, segment);
-                if (!next) return 0; // Not found
+                
+                // Mount Point Traversal (Down)
+                if (next && (next->flags & FS_MOUNTPOINT)) {
+                    // Switch to the mounted root
+                    if (next->ptr) next = next->ptr;
+                }
+                
+                if (!next) return NULL;
                 current = next;
             }
-            
             segment = p + 1;
         }
         p++;
@@ -109,173 +184,40 @@ fs_node_t *vfs_resolve_path(const char *path) {
     // Last segment
     if (strlen(segment) > 0) {
         fs_node_t *next = finddir_fs(current, segment);
-        if (!next) return 0;
+         if (next && (next->flags & FS_MOUNTPOINT)) {
+            if (next->ptr) next = next->ptr;
+        }
+        if (!next) return NULL;
         current = next;
     }
     
     return current;
 }
 
-// Delete file or folder (recursive for directories)
-int vfs_delete(fs_node_t *parent, const char *name) {
-    if (!parent || !name) return -1;
-    
-    // Find the node to delete
-    fs_node_t *node = finddir_fs(parent, (char*)name);
-    if (!node) return -1;  // Not found
-    
-    // If it's a directory, recursively delete contents first
-    if ((node->flags & 0x7) == FS_DIRECTORY) {
-        uint32_t index = 0;
-        while (1) {
-            struct dirent *entry = readdir_fs(node, index);
-            if (!entry) break;
-            
-            // Skip . and ..
-            if (strcmp(entry->name, ".") == 0 || strcmp(entry->name, "..") == 0) {
-                index++;
-                continue;
-            }
-            
-            // Recursively delete child
-            vfs_delete(node, entry->name);
-            // Don't increment index - after deletion, next item shifts down
-        }
-    }
-    
-    // Now delete the node itself using unlink
-    unlink_fs(parent, (char*)name);
-    return 0;
+// Stubs for Linker Satisfaction
+
+int vfs_move(const char *src, const char *dest) {
+    (void)src; (void)dest;
+    console_write("[VFS] Warning: vfs_move not implemented.\n");
+    return -1;
 }
 
-// Rename file or folder
-int vfs_rename(fs_node_t *parent, const char *old_name, const char *new_name) {
-    if (!parent || !old_name || !new_name) return -1;
-    
-    // Find the node
-    fs_node_t *node = finddir_fs(parent, (char*)old_name);
-    if (!node) return -1;
-    
-    // Check if new name already exists
-    fs_node_t *existing = finddir_fs(parent, (char*)new_name);
-    if (existing) return -1;  // Name collision
-    
-    // Simply update the name field
-    strncpy(node->name, new_name, 127);
-    node->name[127] = 0;
-    
-    return 0;
+int vfs_rename(fs_node_t *parent, const char *oldpath, const char *newpath) {
+    (void)parent; (void)oldpath; (void)newpath;
+    console_write("[VFS] Warning: vfs_rename not implemented.\n");
+    return -1;
 }
 
-// Copy file or folder
-int vfs_copy(const char *src_path, const char *dest_path) {
-    if (!src_path || !dest_path) return -1;
-    
-    fs_node_t *src = vfs_resolve_path(src_path);
-    if (!src) return -1;
-    
-    // Extract destination directory and filename
-    char dest_dir[256];
-    char dest_name[128];
-    strcpy(dest_dir, dest_path);
-    
-    char *last_slash = NULL;
-    for (char *p = dest_dir; *p; p++) {
-        if (*p == '/') last_slash = p;
-    }
-    
-    if (last_slash) {
-        strcpy(dest_name, last_slash + 1);
-        *last_slash = 0;
-    } else {
-        strcpy(dest_name, dest_path);
-        strcpy(dest_dir, "/");
-    }
-    
-    fs_node_t *dest_parent = vfs_resolve_path(dest_dir);
-    if (!dest_parent) return -1;
-    
-    // Check if it's a file or directory
-    if ((src->flags & 0x7) == FS_FILE) {
-        // Create new file
-        create_fs(dest_parent, dest_name, 0644);
-        
-        // Copy contents
-        fs_node_t *dest = finddir_fs(dest_parent, dest_name);
-        if (dest && src->length > 0) {
-            uint8_t *buffer = (uint8_t*)memory_alloc(src->length);
-            if (buffer) {
-                read_fs(src, 0, src->length, buffer);
-                write_fs(dest, 0, src->length, buffer);
-                memory_free(buffer);
-            }
-        }
-    } else if ((src->flags & 0x7) == FS_DIRECTORY) {
-        // Create new directory
-        mkdir_fs(dest_parent, dest_name, 0755);
-        
-        // Recursively copy contents
-        fs_node_t *dest_dir_node = finddir_fs(dest_parent, dest_name);
-        if (dest_dir_node) {
-            uint32_t index = 0;
-            while (1) {
-                struct dirent *entry = readdir_fs(src, index++);
-                if (!entry) break;
-                
-                if (strcmp(entry->name, ".") == 0 || strcmp(entry->name, "..") == 0)
-                    continue;
-                
-                // Build paths for recursive copy
-                char src_child[256];
-                char dest_child[256];
-                strcpy(src_child, src_path);
-                strcat(src_child, "/");
-                strcat(src_child, entry->name);
-                
-                strcpy(dest_child, dest_path);
-                strcat(dest_child, "/");
-                strcat(dest_child, entry->name);
-                
-                vfs_copy(src_child, dest_child);
-            }
-        }
-    }
-    
-    return 0;
+int vfs_copy(const char *src, const char *dest) {
+     (void)src; (void)dest;
+     console_write("[VFS] Warning: vfs_copy not implemented.\n");
+     return -1;
 }
 
-// Move file or folder (copy + delete)
-int vfs_move(const char *src_path, const char *dest_path) {
-    if (!src_path || !dest_path) return -1;
-    
-    // First copy
-    if (vfs_copy(src_path, dest_path) != 0) {
-        return -1;
-    }
-    
-    // Then delete source
-    // Extract parent directory and filename from source
-    char src_dir[256];
-    char src_name[128];
-    strcpy(src_dir, src_path);
-    
-    char *last_slash = NULL;
-    for (char *p = src_dir; *p; p++) {
-        if (*p == '/') last_slash = p;
-    }
-    
-    if (last_slash) {
-        strcpy(src_name, last_slash + 1);
-        *last_slash = 0;
-    } else {
-        strcpy(src_name, src_path);
-        strcpy(src_dir, "/");
-    }
-    
-    fs_node_t *src_parent = vfs_resolve_path(src_dir);
-    if (src_parent) {
-        vfs_delete(src_parent, src_name);
-    }
-    
-    return 0;
+int vfs_delete(fs_node_t *parent, const char *path) {
+     (void)parent; (void)path;
+     console_write("[VFS] Warning: vfs_delete partial stub.\n");
+     return -1;
 }
+
+

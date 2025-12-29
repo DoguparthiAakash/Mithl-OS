@@ -1,105 +1,88 @@
-#include "semantic.h"
-#include "list.h"
-#include "string.h"
-#include "memory.h"
-#include "console.h"
+#include <semantic.h>
+#include <string.h>
+#include <memory.h>
+#include <console.h>
 
-// Internal Agent List
-static list_t *agent_list = NULL;
+#define MAX_AGENTS 32
+
+static agent_node_t agents[MAX_AGENTS];
+static int agent_count = 0;
 
 void agent_init(void) {
-    agent_list = list_create();
-    console_write("[SEMANTIC] Core Initialized. Agent Knowledge Graph Active.\n");
+    agent_count = 0;
+    memset(agents, 0, sizeof(agents));
+    console_write("[SEMANTIC] Core Subsystem Initialized.\n");
     
     // Register Default System Agents
-    agent_register("OS_Terminal", "shell,cli,cmd,command,terminal,run", "/boot/shell.elf", 2); // Userspace Shell
-    agent_register("File_Manager", "files,explore,browse,directory,folder,open", "/boot/filemgr.elf", 2);
-    agent_register("Doom_Slayer", "game,play,fps,doom,shoot,kill", "doom", 2); // Internal command
-    agent_register("Notepad_AI", "text,edit,write,note,code,txt", "/boot/notepad.elf", 2);
-    // agent_register("Settings_Bot", "config,setup,system,about,info,settings", "/boot/settings.elf", 2);
+    agent_register("System", "core,kernel,control", "internal", 2);
 }
 
 int agent_register(const char *name, const char *intents, const char *binary, int trust) {
-    if (!agent_list) return -1;
+    if (agent_count >= MAX_AGENTS) {
+        console_write("[SEMANTIC] Registry Full!\n");
+        return -1;
+    }
+
+    agent_node_t *node = &agents[agent_count++];
+    strncpy(node->name, name, 63);
+    strncpy(node->intents, intents, 127);
+    strncpy(node->binary, binary, 127);
+    node->trust_level = trust;
+    node->active = 1;
+
+    console_write("[SEMANTIC] Registered Agent: ");
+    console_write(name);
+    console_write("\n");
     
-    agent_node_t *agent = (agent_node_t*)memory_alloc(sizeof(agent_node_t));
-    if (!agent) return -1;
-    
-    strcpy(agent->name, name);
-    strcpy(agent->intents, intents);
-    strcpy(agent->binary, binary);
-    agent->trust_level = trust;
-    agent->active = 1;
-    
-    list_append(agent_list, agent);
-    return 0;
+    return 0; // Success
 }
 
-// Simple Intent Matching
 int agent_query(const char *query, char *buffer, size_t size) {
-    if (!agent_list || !query || !buffer) return -1;
+    // Naive Implementation: Search for query string inside "intents"
+    // TODO: Implement actual semantic/vector similarity/LLM matching
     
-    list_node_t *node = agent_list->head;
-    agent_node_t *best_match = NULL;
-    int max_score = 0;
-    
-    while(node) {
-        agent_node_t *agent = (agent_node_t*)node->data;
-        int score = 0;
-        
-        // Copy intents to temp buffer for tokenizer
-        char ints[128];
-        strcpy(ints, agent->intents);
-        
-        // Manual Tokenization to avoid missing strtok
-        int i = 0;
-        char *current = ints;
-        while(ints[i]) {
-             // Find end of current tag
-             int start = i;
-             while(ints[i] && ints[i] != ',') i++;
-             
-             if (i > start) {
-                 ints[i] = 0; // Null terminate
-                 char *tag = &ints[start];
-                 if (strstr(query, tag)) {
-                     score++;
-                 }
-                 if (ints[i+1] == 0) break; // End of string
-                 i++; // Skip comma
-             } else {
-                 i++;
-             }
+    for (int i = 0; i < agent_count; i++) {
+        if (agents[i].active && strstr(agents[i].intents, query)) {
+            // Found match!
+            strncpy(buffer, agents[i].binary, size - 1);
+            buffer[size - 1] = 0; // Ensure null term
+            return 0;
         }
-        
-        if (score > max_score) {
-            max_score = score;
-            best_match = agent;
-        }
-        
-        node = node->next;
     }
     
-    if (best_match && max_score > 0) {
-        size_t len = strlen(best_match->binary);
-        if (len >= size) return -1;
-        strcpy(buffer, best_match->binary);
-        return 0;
-    }
-    
-    return -1; // No match
+    return -1; // Not found
 }
 
-// Syscall Handler
+// Unified System Call Handler for Agent SDK
 int sys_agent_op(int op, void *arg1, void *arg2) {
-    if (op == AGENT_OP_REGISTER) {
-        agent_node_t *user_agent = (agent_node_t*)arg1;
-        // Validate pointer logic needed here for security in real OS
-        return agent_register(user_agent->name, user_agent->intents, user_agent->binary, 0);
+    switch(op) {
+        case AGENT_OP_REGISTER: {
+            // arg1 = agent_node_t struct pointer (from userspace)
+            // We need to copy it safely
+            agent_node_t *user_node = (agent_node_t*)arg1;
+            if (!user_node) return -1;
+            
+            // Validate pointers (simple bounds check mock)
+            // In real OS, use copy_from_user
+            
+            return agent_register(user_node->name, user_node->intents, user_node->binary, user_node->trust_level);
+        }
+        case AGENT_OP_QUERY: {
+            // arg1 = query text, arg2 = output buffer (binary path)
+            char *query = (char*)arg1;
+            char *buffer = (char*)arg2;
+            
+            return agent_query(query, buffer, 128); // Force size for now or pass as arg3
+        }
+        case AGENT_OP_INTENT: {
+             // Execute Intent? 
+             // Just Log for now
+             console_write("[SEMANTIC] INTENT: ");
+             console_write((char*)arg1);
+             console_write("\n");
+             return 0;
+        }
+        default:
+            return -1;
     }
-    else if (op == AGENT_OP_QUERY) {
-        return agent_query((const char*)arg1, (char*)arg2, 128);
-    }
-    
-    return -1;
 }
