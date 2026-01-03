@@ -368,8 +368,7 @@ void kmain(uint32_t magic, void* addr)
         prev_x = cur_x;
         prev_y = cur_y;
 
-        extern void switch_task(void);
-        switch_task();
+        process_yield();
     }
 }
 

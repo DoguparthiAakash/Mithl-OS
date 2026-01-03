@@ -22,6 +22,7 @@ C_SOURCES   = kernel/kernel.c \
               kernel/mouse.c \
               kernel/ata.c \
               kernel/memory.c \
+              kernel/spinlock.c \
               kernel/string.c \
               kernel/event.c \
               kernel/input.c \

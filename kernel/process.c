@@ -64,8 +64,6 @@ process_t *process_create(const char *name, void (*entry_point)(void)) {
     void *stack_top = (void*)((uint32_t)stack_addr + 4096);
     proc->esp = (uint32_t)prepare_stack(stack_top, entry_point);
     
-    proc->esp = (uint32_t)prepare_stack(stack_top, entry_point);
-    
     // Initialize UNIX fields
     proc->parent_pid = -1;
     proc->exit_code = 0;

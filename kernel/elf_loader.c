@@ -156,7 +156,7 @@ uint32_t elf_load_file_internal(const char *filename, uint32_t *out_base, int is
          // Add AT_BASE
          stored_auxv[stored_auxc++] = (Elf32_auxv_t){AT_BASE, .a_un.a_val = terp_base};
          
-         return terp_entry + terp_base;
+         return terp_entry;
     }
 
     return hdr.e_entry + load_bias;

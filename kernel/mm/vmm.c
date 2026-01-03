@@ -5,8 +5,11 @@
 #include "console.h"
 #include "ports.h"
 
+#include "spinlock.h"
+
 // The Kernel's Page Directory
 pd_entry_t* kernel_page_directory = 0;
+static lock_t vmm_lock;
 
 // ASM functions (could be inline, but good to decl)
 extern void load_page_directory(unsigned int*);
@@ -37,13 +40,18 @@ static inline uint32_t vmm_get_cr3() {
 
 // Map a single page
 int vmm_map_page(pd_entry_t* pd, void* phys, void* virt) {
+    uint32_t flags = spinlock_acquire_irqsave(&vmm_lock);
+
     // If PD is provided, use it. Otherwise use current CR3.
     pd_entry_t* page_directory = pd;
     if (!page_directory) {
         page_directory = (pd_entry_t*)vmm_get_cr3();
         if (!page_directory) page_directory = kernel_page_directory;
     }
-    if (!page_directory) return 0; // Too early
+    if (!page_directory) {
+        spinlock_release_irqrestore(&vmm_lock, flags);
+        return 0; // Too early
+    }
     
     uint32_t pd_index = (uint32_t)virt >> 22;
     uint32_t pt_index = ((uint32_t)virt >> 12) & 0x03FF;
@@ -53,8 +61,14 @@ int vmm_map_page(pd_entry_t* pd, void* phys, void* virt) {
     // Check if Page Table exists
     if ((*pd_entry & I86_PDE_PRESENT) != I86_PDE_PRESENT) {
         // Allocate new Page Table
+        // Drop lock while calling PMM to allow interrupts? 
+        // NO. PMM is fast and irq-safe. We keep VMM lock to prevent race on *pd_entry.
+        
         void* new_pt_phys = pmm_alloc_block();
-        if (!new_pt_phys) return 0; // OOM
+        if (!new_pt_phys) {
+            spinlock_release_irqrestore(&vmm_lock, flags);
+            return 0; // OOM
+        }
         
         memset(new_pt_phys, 0, PMM_PAGE_SIZE); // Clear it
         
@@ -77,6 +91,7 @@ int vmm_map_page(pd_entry_t* pd, void* phys, void* virt) {
     // FLUSH TLB to ensure CPU sees the new mapping!
     vmm_flush_tlb_entry(virt);
     
+    spinlock_release_irqrestore(&vmm_lock, flags);
     return 1;
 }
 
@@ -115,6 +130,7 @@ void vmm_map_framebuffer(boot_info_t* boot_info) {
 }
 
 void vmm_init(boot_info_t* boot_info) {
+    spinlock_init(vmm_lock);
     serial_write("[VMM] Allocating Page Directory...\n");
     // 1. Allocate Page Directory from PMM
     kernel_page_directory = (pd_entry_t*)pmm_alloc_block();

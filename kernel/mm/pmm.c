@@ -1,4 +1,5 @@
 #include "mm/pmm.h"
+#include "spinlock.h"
 #include "boot_info.h"
 #include <stdint.h>
 #include "string.h"
@@ -17,6 +18,7 @@ typedef uint32_t uintptr_t;
 static uint32_t pmm_bitmap[PMM_MAX_FRAMES / 32];
 static size_t pmm_total_blocks = 0;
 static size_t pmm_used_blocks = 0;
+static lock_t pmm_lock;
 
 // Helper: Set bit
 static void pmm_set_frame(uint32_t frame_idx) {
@@ -50,6 +52,8 @@ static int pmm_first_free_frame() {
 }
 
 void pmm_init(boot_info_t* boot_info) {
+    spinlock_init(pmm_lock);
+    
     // 1. Mark ALL memory as used by default (safer)
     memset(pmm_bitmap, 0xFF, sizeof(pmm_bitmap));
     pmm_used_blocks = PMM_MAX_FRAMES;
@@ -136,17 +140,28 @@ void pmm_deinit_region(uint32_t base, size_t size) {
 }
 
 void* pmm_alloc_block() {
+    uint32_t flags = spinlock_acquire_irqsave(&pmm_lock);
+    
     int frame = pmm_first_free_frame();
-    if (frame == -1) return NULL; // OOM
+    if (frame == -1) {
+        spinlock_release_irqrestore(&pmm_lock, flags);
+        return NULL; // OOM
+    }
     
     pmm_set_frame(frame);
     pmm_used_blocks++;
+    
+    spinlock_release_irqrestore(&pmm_lock, flags);
     
     uint32_t addr = frame * PMM_BLOCK_SIZE;
     return (void*)addr;
 }
 
 void pmm_free_block(void* p) {
+    if (!p) return;
+    
+    uint32_t flags = spinlock_acquire_irqsave(&pmm_lock);
+    
     uint32_t addr = (uint32_t)p;
     int frame = addr / PMM_BLOCK_SIZE;
     
@@ -154,6 +169,8 @@ void pmm_free_block(void* p) {
         pmm_unset_frame(frame);
         pmm_used_blocks--;
     }
+    
+    spinlock_release_irqrestore(&pmm_lock, flags);
 }
 
 size_t pmm_get_total_memory() {

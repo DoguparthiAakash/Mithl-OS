@@ -34,4 +34,8 @@ bool spinlock_acquire(lock_t *spin);
 void spinlock_acquire_or_wait(lock_t *spin);
 void spinlock_drop(lock_t *spin);
 
+// Interrupt-safe variants
+uint32_t spinlock_acquire_irqsave(lock_t *spin);
+void spinlock_release_irqrestore(lock_t *spin, uint32_t flags);
+
 #endif

@@ -24,3 +24,17 @@ void spinlock_acquire_or_wait(lock_t *spin) {
 void spinlock_drop(lock_t *spin) {
     __atomic_clear(&spin->lock, __ATOMIC_RELEASE);
 }
+
+uint32_t spinlock_acquire_irqsave(lock_t *spin) {
+    uint32_t flags;
+    __asm__ volatile("pushfl; pop %0" : "=r"(flags));
+    __asm__ volatile("cli");
+    
+    spinlock_acquire_or_wait(spin);
+    return flags;
+}
+
+void spinlock_release_irqrestore(lock_t *spin, uint32_t flags) {
+    spinlock_drop(spin);
+    __asm__ volatile("push %0; popfl" :: "r"(flags) : "memory", "cc");
+}

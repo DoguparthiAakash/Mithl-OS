@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "spinlock.h"
 #include "stddef.h"
 #include "mm/pmm.h"
 #include "mm/vmm.h"
@@ -23,6 +24,7 @@ typedef struct memory_header {
 static memory_header_t *heap_head = NULL;
 static uint32_t heap_current_end = HEAP_START_VADDR;
 static size_t memory_used_bytes = 0;
+static lock_t heap_lock;
 
 // Align allocations to 4 bytes
 #define ALIGN(x) (((x) + 3) & ~3)
@@ -92,6 +94,7 @@ static int expand_heap(uint32_t n_pages) {
 // Initialize memory management
 void memory_init(void)
 {
+    spinlock_init(heap_lock);
     heap_head = NULL;
     heap_current_end = HEAP_START_VADDR;
     memory_used_bytes = 0;
@@ -141,7 +144,7 @@ void *memory_alloc(size_t size)
     if (size == 0) return NULL;
     
     // Critical Section: Disable Interrupts
-    asm volatile("cli");
+    uint32_t flags = spinlock_acquire_irqsave(&heap_lock);
     
     size_t aligned_size = ALIGN(size);
     size_t total_req = aligned_size + HEADER_SIZE;
@@ -172,7 +175,7 @@ void *memory_alloc(size_t size)
             if (needed_pages < 32) needed_pages = 32;
             
             if (!expand_heap(needed_pages)) {
-                asm volatile("sti");
+                spinlock_release_irqrestore(&heap_lock, flags);
                 return NULL; // OOM
             }
             // Loop continues to scan again
@@ -180,7 +183,7 @@ void *memory_alloc(size_t size)
     }
     
     if (!best_fit) {
-        asm volatile("sti");
+        spinlock_release_irqrestore(&heap_lock, flags);
         return NULL; // Still fail
     }
     
@@ -203,7 +206,7 @@ void *memory_alloc(size_t size)
     // Valid zeroing
     for (size_t i=0; i<aligned_size; i++) ptr[i] = 0;
     
-    asm volatile("sti");
+    spinlock_release_irqrestore(&heap_lock, flags);
     return (void *)ptr;
 }
 
@@ -213,7 +216,7 @@ void memory_free(void *ptr)
     if (!ptr) return;
     
     // Critical Section
-    asm volatile("cli");
+    uint32_t flags = spinlock_acquire_irqsave(&heap_lock);
     
     memory_header_t *header = (memory_header_t *)((uint8_t *)ptr - HEADER_SIZE);
     
@@ -227,7 +230,7 @@ void memory_free(void *ptr)
         memory_coalesce_full();
     }
     
-    asm volatile("sti");
+    spinlock_release_irqrestore(&heap_lock, flags);
 }
 
 size_t memory_get_used(void) { return memory_used_bytes; }
